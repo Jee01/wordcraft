@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>회원가입 — WordCraft AI</title>
-  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="style.css" />
   <style>
     .auth-page {
       min-height: 100vh;
@@ -285,6 +285,26 @@
     }
     .deco-stat strong { display: block; font-size: 1.3rem; font-weight: 800; color: var(--accent-2); }
     .deco-stat span { font-size: 0.78rem; color: var(--text-3); }
+
+    /* API 에러 메시지 */
+    .api-error {
+      display: none;
+      margin-top: -10px;
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      background: rgba(255, 107, 107, 0.12);
+      border: 1px solid rgba(255, 107, 107, 0.35);
+      color: #ff6b6b;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    .api-error.show { display: block; }
+
+    /* 버튼 로딩 상태 */
+    #submitBtn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -359,7 +379,8 @@
           <span class="terms-error" id="termsError">필수 약관에 동의해주세요.</span>
         </div>
 
-        <button type="submit" class="btn btn--primary btn-full">회원가입</button>
+        <button type="submit" class="btn btn--primary btn-full" id="submitBtn">회원가입</button>
+        <div class="api-error" id="apiError"></div>
 
       </form>
 
@@ -449,6 +470,7 @@
 
 </div>
 
+<script src="main.js"></script>
 <script>
   /* ===== Terms all-check ===== */
   const termsAll = document.getElementById('termsAll');
@@ -539,8 +561,46 @@
     } else { hideErr('termsError'); }
 
     if (!ok) return;
-    // TODO: POST /api/auth/register
-    console.log('register submit', { nickname, email });
+
+    /* ===== POST /api/auth/register ===== */
+    const submitBtn = document.getElementById('submitBtn');
+    const apiError  = document.getElementById('apiError');
+
+    // 로딩 상태
+    submitBtn.disabled = true;
+    submitBtn.textContent = '처리 중...';
+    apiError.textContent = '';
+    apiError.classList.remove('show');
+
+    fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nickname, email, password: pw }),
+    })
+      .then(res => {
+        if (!res.ok) return res.json().then(data => Promise.reject(data));
+        return res.json();
+      })
+      .then(() => {
+        // 성공 → 로그인 페이지로 이동
+        window.location.href = 'login.html?registered=true';
+      })
+      .catch(err => {
+        // 서버 에러 메시지 표시
+        const msg = err?.message || '회원가입에 실패했습니다. 잠시 후 다시 시도해주세요.';
+        apiError.textContent = msg;
+        apiError.classList.add('show');
+
+        // 이메일 중복 에러 처리
+        if (err?.code === 'EMAIL_DUPLICATE') {
+          markInput('email', 'error');
+          showErr('emailError', '이미 사용 중인 이메일입니다.');
+        }
+      })
+      .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '회원가입';
+      });
   });
 
   /* Clear errors on input */

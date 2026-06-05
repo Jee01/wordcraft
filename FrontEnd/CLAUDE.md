@@ -17,16 +17,17 @@
 ```
 C:\study\wordcraft\
 └── src\main\resources\
-    ├── style.css          # 공통 스타일 (다크/라이트 테마 변수 포함)
-    ├── main.js            # 공통 JS (햄버거 메뉴, 스크롤 reveal, 단어 카드 순환, 태그 토글)
-    └── html\
-        ├── index.html     # 메인 랜딩 페이지
-        ├── login.html     # 로그인 페이지
-        └── register.html  # 회원가입 페이지
+    ├── style.css           # 공통 스타일 (다크/라이트 테마 변수 포함)
+    ├── main.js             # 공통 JS (Hash Router, 햄버거 메뉴, 스크롤 reveal 등)
+    └── static\             # ⚠️ html\ → static\ 로 폴더명 변경됨 (Spring Boot 정적 리소스 규칙)
+        ├── index.html      # 메인 랜딩 페이지
+        ├── login.html      # 로그인 페이지
+        └── register.html   # 회원가입 페이지
 ```
 
-> **CSS/JS 경로 주의:** `html/` 폴더 기준 상대경로는 `../style.css`, `../main.js` (1단계 위).  
-> `../../../` 3단계는 잘못된 경로로 스타일이 로드되지 않음.
+> **CSS/JS 경로 주의:** `style.css`, `main.js`는 `static/` 폴더 안에 위치해야 하며, HTML에서 `style.css`, `main.js`로 참조.  
+> Spring Boot는 `src/main/resources/static/`만 정적 리소스로 서빙하므로, 그 외 위치에 두면 CSS/JS가 로드되지 않음.  
+> `login.html`, `register.html`에도 `<script src="main.js"></script>` 포함 필요.
 
 ---
 
@@ -72,28 +73,85 @@ C:\study\wordcraft\
 - 전체 동의 체크박스 (개별 약관 자동 연동)
 - Google / GitHub 소셜 가입 버튼
 - 우측 데코 패널: 서비스 특징 4가지 + 통계 카드
-- 백엔드 연동 포인트: `POST /api/auth/register`
+- **`POST /api/auth/register` 실제 API 연동 완료** (아래 참고)
 
 ---
 
-### 4. 다크 / 라이트 모드 토글
+### 4. 회원가입 API 연동 (`POST /api/auth/register`)
+
+```
+유효성 검사 통과
+    ↓
+버튼 비활성화 + "처리 중..." 표시
+    ↓
+fetch('POST /api/auth/register', { nickname, email, password })
+    ↓
+성공(2xx)  → login.html?registered=true 로 이동
+실패(4xx)  → .api-error 박스에 서버 message 표시
+           → code === 'EMAIL_DUPLICATE' 이면 이메일 필드 빨간 테두리 + 안내 문구
+    ↓
+finally → 버튼 다시 활성화 + 텍스트 복원
+```
+
+**서버 에러 응답 예상 형식 (백엔드와 맞춰야 함):**
+```json
+{ "message": "이미 사용 중인 이메일입니다.", "code": "EMAIL_DUPLICATE" }
+```
+
+**추가된 UI 요소:**
+- `id="submitBtn"` — 로딩 중 `disabled` + 텍스트 변경
+- `.api-error` — 서버 에러 메시지 표시 박스 (빨간 배경, 기본 hidden)
+
+---
+
+### 5. 다크 / 라이트 모드 토글
 
 - 위치: 네브바 우상단 (로그인·시작하기 버튼 왼쪽)
 - 다크 모드: 🌙 아이콘 표시 (기본값)
 - 라이트 모드: ☀️ 아이콘 표시
 - `localStorage('wc-theme')` 에 저장 → 새로고침 후에도 유지
 - CSS는 `html.light { --bg: ...; }` 변수 오버라이드 방식
+- 토글 로직은 `index.html` 하단 인라인 IIFE `<script>`에서 처리 (main.js와 분리)
 
 **주의 — 과거 버그 및 수정 이력:**
 
 1. **CSS 경로 오류** (`../../../style.css` → `../style.css`)  
-   `html/` 폴더 기준 3단계 위에는 `style.css`가 없어 CSS 자체가 로드되지 않았음.  
+   `static/` 폴더 기준 3단계 위에는 `style.css`가 없어 CSS 자체가 로드되지 않았음.  
    파일을 직접 열 때 스타일 전혀 미적용 → `../style.css`로 수정.
+
+3. **`style.css` / `main.js` 서빙 불가 (2026-06-05 수정)**  
+   `style.css`, `main.js`를 `src/main/resources/`에 두고 `../style.css`로 참조 → Spring Boot가 `static/` 외부 파일을 서빙하지 않아 CSS/JS 전혀 미적용.  
+   → 두 파일을 `src/main/resources/static/`으로 이동, HTML 경로를 `style.css` / `main.js`로 수정.  
+   → `login.html`, `register.html`에 누락된 `<script src="main.js"></script>` 추가.
 
 2. **`const` 중복 선언 오류**  
    `main.js`와 인라인 `<script>` 모두 `const html = document.documentElement` 선언.  
    같은 전역 스코프에서 `const` 중복 → SyntaxError → 인라인 스크립트 실행 중단 → 클릭 핸들러 미등록.  
    → `main.js`에서 테마 토글 블록 완전 제거, 인라인 스크립트(IIFE)만 유지.
+
+---
+
+### 6. Hash Router (`main.js`)
+
+`main.js` 최상단에 IIFE로 Hash Router 구현. `index.html`에서 각 페이지로 이동 가능.
+
+```js
+const ROUTES = {
+  '#/login':    'login.html',
+  '#/register': 'register.html',
+};
+```
+
+**동작 방식:**
+- 페이지 최초 진입 시 현재 hash 확인 → 매핑된 페이지로 즉시 이동
+- `hashchange` 이벤트 발생 시 동일하게 처리
+- `#features`, `#how`, `#community` 등 앵커 스크롤용 hash는 ROUTES 미등록 → 무시(스크롤 유지)
+
+**향후 페이지 추가 시 ROUTES에 한 줄 추가:**
+```js
+'#/dashboard': 'dashboard.html',
+'#/vocab/new': 'vocab-new.html',
+```
 
 ---
 

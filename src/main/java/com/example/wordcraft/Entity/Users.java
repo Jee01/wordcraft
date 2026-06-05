@@ -27,6 +27,9 @@ public class Users {
     private String nickname;
 
     @Column(nullable = false)
+    private String password;
+
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @PrePersist //DB 저장 직전에 자동 실행

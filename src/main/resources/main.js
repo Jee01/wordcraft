@@ -1,3 +1,27 @@
+/* ===== HASH ROUTER ===== */
+(function () {
+  // Hash → HTML 파일 매핑
+  const ROUTES = {
+    '#/login':    'login.html',
+    '#/register': 'register.html',
+  };
+
+  function navigate(hash) {
+    const target = ROUTES[hash];
+    if (target) {
+      window.location.href = target;
+    }
+  }
+
+  // 페이지 최초 진입 시 처리 (직접 URL에 hash가 붙은 경우)
+  navigate(window.location.hash);
+
+  // hash 변경 시 처리 (링크 클릭)
+  window.addEventListener('hashchange', () => {
+    navigate(window.location.hash);
+  });
+})();
+
 /* ===== HAMBURGER ===== */
 const hamburger = document.getElementById('hamburger');
 const mobileMenu = document.getElementById('mobileMenu');
