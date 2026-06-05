@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>회원가입 — WordCraft AI</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    .auth-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+    }
+
+    .auth-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 32px;
+      background: var(--bg);
+    }
+
+    .auth-panel__inner {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .auth-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin-bottom: 40px;
+      color: var(--text);
+    }
+    .auth-logo span { color: var(--accent); }
+
+    .auth-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: -.5px;
+      margin-bottom: 8px;
+    }
+    .auth-sub {
+      font-size: 0.9rem;
+      color: var(--text-2);
+      margin-bottom: 36px;
+    }
+    .auth-sub a { color: var(--accent); font-weight: 600; }
+    .auth-sub a:hover { text-decoration: underline; }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-2);
+      letter-spacing: .3px;
+    }
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--bg-3);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: var(--font);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .form-input::placeholder { color: var(--text-3); }
+    .form-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(108,99,255,.15);
+    }
+    .form-input.error { border-color: #ff6b6b; }
+    .form-input.success { border-color: var(--success); }
+
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-error {
+      font-size: 0.78rem;
+      color: #ff6b6b;
+      margin-top: 4px;
+      display: none;
+    }
+    .form-error.show { display: block; }
+
+    /* Password strength bar */
+    .pw-strength {
+      margin-top: 8px;
+    }
+    .pw-strength__bar {
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border);
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+    .pw-strength__fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 2px;
+      transition: width .3s, background .3s;
+    }
+    .pw-strength__label {
+      font-size: 0.75rem;
+      color: var(--text-3);
+    }
+
+    /* Terms */
+    .terms-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .form-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: var(--text-2);
+      line-height: 1.4;
+    }
+    .form-check input[type="checkbox"] {
+      appearance: none;
+      width: 16px; height: 16px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      border: 1.5px solid var(--border-2);
+      border-radius: 4px;
+      background: var(--bg-3);
+      cursor: pointer;
+      position: relative;
+      transition: border-color .2s, background .2s;
+    }
+    .form-check input[type="checkbox"]:checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .form-check input[type="checkbox"]:checked::after {
+      content: '';
+      position: absolute;
+      left: 4px; top: 1px;
+      width: 5px; height: 9px;
+      border: 2px solid #fff;
+      border-top: none; border-left: none;
+      transform: rotate(45deg);
+    }
+    .form-check a { color: var(--accent); font-weight: 600; }
+    .form-check a:hover { text-decoration: underline; }
+    .terms-error {
+      font-size: 0.78rem;
+      color: #ff6b6b;
+      display: none;
+    }
+    .terms-error.show { display: block; }
+
+    .btn-full {
+      width: 100%;
+      justify-content: center;
+      padding: 13px;
+      font-size: 0.98rem;
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .divider__line { flex: 1; height: 1px; background: var(--border); }
+    .divider__text { font-size: 0.78rem; color: var(--text-3); white-space: nowrap; }
+
+    .social-btns {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .btn-social {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 11px;
+      background: var(--bg-3);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-2);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color .2s, color .2s;
+      font-family: var(--font);
+    }
+    .btn-social:hover { border-color: var(--border-2); color: var(--text); }
+
+    .auth-footer-note {
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--text-3);
+      line-height: 1.6;
+    }
+    .auth-footer-note a { color: var(--text-2); }
+    .auth-footer-note a:hover { color: var(--accent); }
+
+    /* Right deco */
+    .auth-deco {
+      flex: 1;
+      background: var(--bg-2);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    @media (max-width: 860px) { .auth-deco { display: none; } }
+
+    .auth-deco__orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: .15;
+    }
+    .auth-deco__orb--1 {
+      width: 400px; height: 400px;
+      background: var(--accent);
+      top: -100px; left: -100px;
+    }
+    .auth-deco__orb--2 {
+      width: 300px; height: 300px;
+      background: #a78bfa;
+      bottom: -80px; right: -80px;
+    }
+
+    .auth-deco__content { position: relative; z-index: 1; text-align: left; width: 320px; }
+
+    .feature-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin-bottom: 36px;
+    }
+    .feature-item {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .feature-item__icon {
+      font-size: 1.4rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .feature-item h4 { font-size: 0.92rem; font-weight: 700; margin-bottom: 4px; }
+    .feature-item p { font-size: 0.82rem; color: var(--text-2); line-height: 1.5; }
+
+    .deco-stats {
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      display: flex;
+      gap: 28px;
+    }
+    .deco-stat strong { display: block; font-size: 1.3rem; font-weight: 800; color: var(--accent-2); }
+    .deco-stat span { font-size: 0.78rem; color: var(--text-3); }
+  </style>
+</head>
+<body>
+
+<div class="auth-page">
+
+  <!-- LEFT: Form -->
+  <div class="auth-panel">
+    <div class="auth-panel__inner">
+
+      <a href="index.html" class="auth-logo">🔤 WordCraft<span>AI</span></a>
+
+      <h1 class="auth-title">무료로 시작하기</h1>
+      <p class="auth-sub">
+        이미 계정이 있으신가요? <a href="login.html">로그인</a>
+      </p>
+
+      <form id="registerForm" novalidate>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="nickname">닉네임</label>
+            <input class="form-input" type="text" id="nickname" name="nickname"
+                   placeholder="닉네임" autocomplete="nickname" />
+            <span class="form-error" id="nicknameError">닉네임을 입력해주세요.</span>
+          </div>
+          <div class="form-group">
+            <label for="email">이메일</label>
+            <input class="form-input" type="email" id="email" name="email"
+                   placeholder="example@email.com" autocomplete="email" />
+            <span class="form-error" id="emailError">올바른 이메일을 입력해주세요.</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">비밀번호</label>
+          <input class="form-input" type="password" id="password" name="password"
+                 placeholder="8자 이상, 영문+숫자 조합" autocomplete="new-password" />
+          <div class="pw-strength">
+            <div class="pw-strength__bar">
+              <div class="pw-strength__fill" id="pwFill"></div>
+            </div>
+            <span class="pw-strength__label" id="pwLabel"></span>
+          </div>
+          <span class="form-error" id="passwordError">비밀번호는 8자 이상이어야 합니다.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="passwordConfirm">비밀번호 확인</label>
+          <input class="form-input" type="password" id="passwordConfirm" name="passwordConfirm"
+                 placeholder="비밀번호를 다시 입력하세요" autocomplete="new-password" />
+          <span class="form-error" id="confirmError">비밀번호가 일치하지 않습니다.</span>
+        </div>
+
+        <div class="terms-group">
+          <label class="form-check">
+            <input type="checkbox" id="termsAll" />
+            <span><strong>전체 동의</strong></span>
+          </label>
+          <label class="form-check">
+            <input type="checkbox" id="terms1" />
+            <span><a href="#">이용약관</a> 동의 (필수)</span>
+          </label>
+          <label class="form-check">
+            <input type="checkbox" id="terms2" />
+            <span><a href="#">개인정보처리방침</a> 동의 (필수)</span>
+          </label>
+          <label class="form-check">
+            <input type="checkbox" id="terms3" />
+            <span>마케팅 수신 동의 (선택)</span>
+          </label>
+          <span class="terms-error" id="termsError">필수 약관에 동의해주세요.</span>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn-full">회원가입</button>
+
+      </form>
+
+      <div class="divider">
+        <div class="divider__line"></div>
+        <span class="divider__text">또는 소셜 계정으로</span>
+        <div class="divider__line"></div>
+      </div>
+
+      <div class="social-btns">
+        <button class="btn-social" type="button">
+          <svg width="18" height="18" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          Google로 가입하기
+        </button>
+        <button class="btn-social" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text)">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12"/>
+          </svg>
+          GitHub으로 가입하기
+        </button>
+      </div>
+
+      <p class="auth-footer-note">
+        가입하면 <a href="#">이용약관</a> 및 <a href="#">개인정보처리방침</a>에 동의하는 것으로 간주됩니다.
+      </p>
+
+    </div>
+  </div>
+
+  <!-- RIGHT: Decorative -->
+  <div class="auth-deco">
+    <div class="auth-deco__orb auth-deco__orb--1"></div>
+    <div class="auth-deco__orb auth-deco__orb--2"></div>
+    <div class="auth-deco__content">
+      <p class="section__sub" style="margin-bottom:20px">WordCraft AI와 함께라면</p>
+      <div class="feature-list">
+        <div class="feature-item">
+          <div class="feature-item__icon">🏷️</div>
+          <div>
+            <h4>태그별 맞춤 단어장</h4>
+            <p>수능·토익·토플 맥락에 최적화된 뜻과 예문을 AI가 자동 생성합니다.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-item__icon">📂</div>
+          <div>
+            <h4>기존 단어장 자동 변환</h4>
+            <p>텍스트, 이미지, PDF를 업로드하면 AI가 단어장으로 변환합니다.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-item__icon">🌐</div>
+          <div>
+            <h4>커뮤니티 공유</h4>
+            <p>내 단어장을 공유하고 다른 사람의 단어장을 내 것으로 복사하세요.</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-item__icon">📝</div>
+          <div>
+            <h4>다양한 테스트</h4>
+            <p>플래시카드·빈칸채우기·오답노트로 취약 단어를 집중 공략합니다.</p>
+          </div>
+        </div>
+      </div>
+      <div class="deco-stats">
+        <div class="deco-stat">
+          <strong>무료</strong>
+          <span>기본 플랜</span>
+        </div>
+        <div class="deco-stat">
+          <strong>3+</strong>
+          <span>AI 모델</span>
+        </div>
+        <div class="deco-stat">
+          <strong>무제한</strong>
+          <span>단어장 생성</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* ===== Terms all-check ===== */
+  const termsAll = document.getElementById('termsAll');
+  const termsBoxes = ['terms1','terms2','terms3'].map(id => document.getElementById(id));
+
+  termsAll.addEventListener('change', () => {
+    termsBoxes.forEach(b => b.checked = termsAll.checked);
+  });
+  termsBoxes.forEach(b => {
+    b.addEventListener('change', () => {
+      termsAll.checked = termsBoxes.every(x => x.checked);
+    });
+  });
+
+  /* ===== Password strength ===== */
+  const pwInput = document.getElementById('password');
+  const pwFill  = document.getElementById('pwFill');
+  const pwLabel = document.getElementById('pwLabel');
+
+  const levels = [
+    { min: 0,  color: '#ff6b6b', label: '매우 약함', pct: '20%'  },
+    { min: 1,  color: '#ff9f43', label: '약함',       pct: '40%'  },
+    { min: 2,  color: '#f5a623', label: '보통',       pct: '60%'  },
+    { min: 3,  color: '#3ecf8e', label: '강함',       pct: '80%'  },
+    { min: 4,  color: '#6c63ff', label: '매우 강함',  pct: '100%' },
+  ];
+
+  pwInput.addEventListener('input', () => {
+    const v = pwInput.value;
+    if (!v) { pwFill.style.width = '0'; pwLabel.textContent = ''; return; }
+    let score = 0;
+    if (v.length >= 8) score++;
+    if (/[A-Z]/.test(v)) score++;
+    if (/[0-9]/.test(v)) score++;
+    if (/[^A-Za-z0-9]/.test(v)) score++;
+    const lv = levels[Math.min(score, 4)];
+    pwFill.style.width = lv.pct;
+    pwFill.style.background = lv.color;
+    pwLabel.textContent = lv.label;
+    pwLabel.style.color = lv.color;
+  });
+
+  /* ===== Form validation ===== */
+  const form = document.getElementById('registerForm');
+
+  function showErr(id, msg) {
+    const el = document.getElementById(id);
+    if (msg) el.textContent = msg;
+    el.classList.add('show');
+  }
+  function hideErr(id) { document.getElementById(id).classList.remove('show'); }
+  function markInput(id, state) {
+    const el = document.getElementById(id);
+    el.classList.toggle('error', state === 'error');
+    el.classList.toggle('success', state === 'success');
+  }
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    let ok = true;
+
+    const nickname = document.getElementById('nickname').value.trim();
+    const email    = document.getElementById('email').value.trim();
+    const pw       = document.getElementById('password').value;
+    const pwc      = document.getElementById('passwordConfirm').value;
+    const t1       = document.getElementById('terms1').checked;
+    const t2       = document.getElementById('terms2').checked;
+
+    if (!nickname) {
+      markInput('nickname','error'); showErr('nicknameError'); ok = false;
+    } else { markInput('nickname','success'); hideErr('nicknameError'); }
+
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(email)) {
+      markInput('email','error'); showErr('emailError'); ok = false;
+    } else { markInput('email','success'); hideErr('emailError'); }
+
+    if (pw.length < 8) {
+      markInput('password','error'); showErr('passwordError'); ok = false;
+    } else { markInput('password','success'); hideErr('passwordError'); }
+
+    if (pw !== pwc || !pwc) {
+      markInput('passwordConfirm','error'); showErr('confirmError'); ok = false;
+    } else { markInput('passwordConfirm','success'); hideErr('confirmError'); }
+
+    if (!t1 || !t2) {
+      showErr('termsError'); ok = false;
+    } else { hideErr('termsError'); }
+
+    if (!ok) return;
+    // TODO: POST /api/auth/register
+    console.log('register submit', { nickname, email });
+  });
+
+  /* Clear errors on input */
+  ['nickname','email','password','passwordConfirm'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      document.getElementById(id).classList.remove('error','success');
+      hideErr(id + 'Error');
+    });
+  });
+</script>
+
+</body>
+</html>
