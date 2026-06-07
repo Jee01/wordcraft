@@ -1,5 +1,7 @@
 package com.example.wordcraft.Controller;
 
+import com.example.wordcraft.DTO.LoginRequestDTO;
+import com.example.wordcraft.DTO.TokenResponseDTO;
 import com.example.wordcraft.DTO.UserRegisterDTO;
 import com.example.wordcraft.Service.UserService;
 import jakarta.validation.Valid;
@@ -27,5 +29,10 @@ public class UserController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(Map.of("message", "success registered"));
+    }
+    @PostMapping("/login")
+    public ResponseEntity<TokenResponseDTO> login (@Valid @RequestBody LoginRequestDTO loginRequestDTO){
+        TokenResponseDTO tokenResponseDTO = userService.login(loginRequestDTO);
+        return ResponseEntity.ok(tokenResponseDTO);
     }
 }

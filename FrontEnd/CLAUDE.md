@@ -62,7 +62,57 @@ C:\study\wordcraft\
 - 로그인 유지 체크박스, 비밀번호 찾기 링크
 - Google / GitHub 소셜 로그인 버튼 (OAuth placeholder)
 - 우측 데코 패널: 샘플 단어 카드 (`establish`)
-- 백엔드 연동 포인트: `POST /api/auth/login`
+- **`POST /api/auth/login` 실제 API 연동 완료** (아래 참고)
+
+---
+
+### 5-1. 로그인 API 연동 (`POST /api/auth/login`)
+
+```
+유효성 검사 통과
+    ↓
+버튼 비활성화 + "처리 중..." 표시
+    ↓
+fetch('POST /api/auth/login', { email, password })
+    ↓
+성공(2xx)  → accessToken / refreshToken 을 localStorage 저장 → index.html 이동
+실패(4xx)  → .api-error 박스에 서버 message 표시
+네트워크 오류 → "서버와 통신할 수 없습니다." 안내
+    ↓
+finally → 버튼 다시 활성화 + 텍스트 복원
+```
+
+**요청 바디 (LoginRequestDTO):**
+```json
+{ "email": "user@example.com", "password": "password123" }
+```
+
+**응답 바디 (TokenResponseDTO):**
+```json
+{ "accessToken": "...", "refreshToken": "..." }
+```
+
+**추가된 UI 요소:**
+- `id="submitBtn"` — 로딩 중 `disabled` + 텍스트 변경
+- `.api-error` — 서버 에러 메시지 표시 박스 (빨간 배경, 기본 hidden)
+
+---
+
+### 5-2. 이메일 유효성 검사 정규식 강화 (`login.html`)
+
+**변경 전:** `/^[^\s@]+@[^\s@]+\.[^\s@]+$/`  
+→ 공백·@ 제외 모든 문자 허용, TLD 1자리도 통과하는 문제
+
+**변경 후:** `/^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/`  
+→ 허용 문자 명시(`a-z A-Z 0-9 . _ % + -`), TLD **최소 2자리** 강제
+
+| 입력 예시 | 결과 |
+|---|---|
+| `jkm2821@` | 실패 (도메인 없음) |
+| `jkm2821@gmail` | 실패 (점 없음) |
+| `jkm2821@gmail.c` | 실패 (TLD 1자리) |
+| `jkm2821@gmail.co` | 통과 |
+| `jkm2821@gmail.com` | 통과 |
 
 ---
 

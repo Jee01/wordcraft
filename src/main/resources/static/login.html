@@ -197,6 +197,23 @@
     }
     .form-error.show { display: block; }
 
+    .api-error {
+      display: none;
+      background: rgba(255,107,107,.12);
+      border: 1px solid #ff6b6b;
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      color: #ff6b6b;
+      margin-bottom: 16px;
+    }
+    .api-error.show { display: block; }
+
+    #submitBtn:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
     /* Right panel — decorative */
     .auth-deco {
       flex: 1;
@@ -303,7 +320,8 @@
           <a href="#forgot" class="forgot-link">비밀번호 찾기</a>
         </div>
 
-        <button type="submit" class="btn btn--primary btn-full">로그인</button>
+        <div class="api-error" id="apiError"></div>
+        <button type="submit" class="btn btn--primary btn-full" id="submitBtn">로그인</button>
 
       </form>
 
@@ -372,7 +390,7 @@
 
   function validate() {
     let ok = true;
-    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRe = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
 
     if (!emailRe.test(emailEl.value.trim())) {
       emailEl.classList.add('error');
@@ -395,11 +413,46 @@
     return ok;
   }
 
-  form.addEventListener('submit', e => {
+  const submitBtn = document.getElementById('submitBtn');
+  const apiError  = document.getElementById('apiError');
+
+  form.addEventListener('submit', async e => {
     e.preventDefault();
     if (!validate()) return;
-    // TODO: POST /api/auth/login
-    console.log('login submit', { email: emailEl.value });
+
+    apiError.classList.remove('show');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '처리 중...';
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email:    emailEl.value.trim(),
+          password: passwordEl.value,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        apiError.textContent = data.message || '로그인에 실패했습니다.';
+        apiError.classList.add('show');
+        return;
+      }
+
+      localStorage.setItem('accessToken',  data.accessToken);
+      localStorage.setItem('refreshToken', data.refreshToken);
+      location.href = 'index.html';
+
+    } catch (err) {
+      apiError.textContent = '서버와 통신할 수 없습니다. 잠시 후 다시 시도해주세요.';
+      apiError.classList.add('show');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = '로그인';
+    }
   });
 
   [emailEl, passwordEl].forEach(el => {

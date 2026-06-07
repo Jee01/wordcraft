@@ -20,4 +20,14 @@ public class GlobalExceptionalHandler {
                         "message", e.getMessage()
                 ));
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException e) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED) // 401
+                .body(Map.of(
+                        "code", "LOGIN_FAILED",
+                        "message", e.getMessage()
+                ));
+    }
 }

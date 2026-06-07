@@ -32,6 +32,9 @@ public class Users {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Column
+    private String refreshToken;
+
     @PrePersist //DB 저장 직전에 자동 실행
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
