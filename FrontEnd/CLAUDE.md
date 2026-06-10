@@ -233,13 +233,80 @@ html.light { ... } # 라이트 모드 CSS 변수 오버라이드
 
 ---
 
-## 향후 작업 예정 (미구현)
+## 미구현 → 구현 완료 (2026-06-07)
 
-- `#/dashboard` — 내 단어장 목록, 최근 학습 현황
-- `#/vocab/new` — 태그 선택 + 단어 입력 + AI 생성 UI
-- `#/vocab/:id` — 단어장 상세 (조회·수정·삭제)
-- `#/vocab/import` — 텍스트·이미지·파일 업로드 자동 변환
-- `#/test/:vocabId` — 테스트 유형 선택 + 문제 풀기
-- `#/test/:id/result` — 정답률·오답 분석 결과
-- `#/community` — 공개 단어장 탐색·검색
-- `#/settings` — 프로필, AI API Key 입력·관리
+이전에 "향후 작업 예정"이었던 8개 페이지가 모두 구현됨.
+
+### 신규 구현 페이지
+
+| 파일 | 라우트 | 주요 기능 |
+|---|---|---|
+| `dashboard.html` | `#/dashboard` | 내 단어장 그리드, 학습 통계 바, 최근 활동 내역 |
+| `vocab-new.html` | `#/vocab/new` | 태그 멀티 선택, 단어 입력(미리보기), AI 제공자 선택, `POST /api/vocab/generate` 연동 |
+| `vocab.html` | `#/vocab/:id` | 단어 카드 그리드, 검색·필터, 학습 완료 토글, 공개/비공개 전환, 삭제 모달 |
+| `vocab-import.html` | `#/vocab/import` | 텍스트·이미지·파일 3탭, 드래그앤드롭, `POST /api/vocab/import/*` 연동 |
+| `test.html` | `#/test/:vocabId` | 5가지 테스트 유형(뜻 맞추기·빈칸·플래시카드·스펠링·연결), 진행 바, 건너뛰기 |
+| `test-result.html` | `#/test/:id/result` | 점수 원형, 정답/오답/건너뜀 통계, 오답 단어 목록, `POST /api/test/history` 저장 |
+| `community.html` | `#/community` | 검색바, 태그 필터, 인기/최신/단어수 정렬, 좋아요 토글, 단어장 복사 |
+| `settings.html` | `#/settings` | 프로필 수정, AI API Key 관리(localStorage만 저장), 학습 설정 토글, 비밀번호 변경, 위험 구역 |
+
+### Hash Router 업데이트 (`main.js`)
+
+정적 라우트 6개 + 동적 라우트 패턴 매칭 추가:
+
+```js
+const ROUTES = {
+  '#/login':        'login.html',
+  '#/register':     'register.html',
+  '#/dashboard':    'dashboard.html',
+  '#/vocab/new':    'vocab-new.html',
+  '#/vocab/import': 'vocab-import.html',
+  '#/community':    'community.html',
+  '#/settings':     'settings.html',
+};
+// 동적 패턴
+// #/vocab/:id      → vocab.html?id=:id
+// #/test/:vocabId  → test.html?vocabId=:id
+// #/test/:id/result → test-result.html?vocabId=:id
+```
+
+### main.js 버그 수정
+
+Word card cycling 코드에 null 체크 추가.  
+비인덱스 페이지에서 `genBar.classList.add('active')` 호출 시 발생하던 오류 수정:
+
+```js
+function cycleWord() {
+  if (!card || !genBar) return;  // ← 추가됨
+  ...
+}
+```
+
+### 공통 설계 원칙
+
+- 모든 보호 페이지: 진입 시 `accessToken` 체크 → 없으면 `login.html` 리다이렉트
+- API 실패 시 샘플 데이터 폴백 → 백엔드 없이도 UI 확인 가능
+- `style.css` 디자인 시스템 계승 (다크/라이트, 컬러 변수, 공통 클래스)
+- 테스트 결과는 `sessionStorage('testResults')`로 `test.html` → `test-result.html` 전달
+
+---
+
+## 디자인 미리보기 전용 파일 (`FrontEnd/`)
+
+`C:\study\wordcraft\FrontEnd\` 폴더에 동일 페이지의 **인증 없는 버전** 생성 (2026-06-07).  
+브라우저에서 HTML 파일을 직접 열어 로그인 없이 디자인 확인 가능.
+
+**생성 방법:** `src/main/resources/static/` 파일을 복사 후 3가지 치환:
+
+| 항목 | 원본 | FrontEnd 버전 |
+|---|---|---|
+| CSS 경로 | `href="style.css"` | `href="../src/main/resources/static/style.css"` |
+| JS 경로 | `src="main.js"` | `src="../src/main/resources/static/main.js"` |
+| 인증 체크 | `if (!token) { window.location.href = 'login.html'; return; }` | `/* design-preview: auth check removed */` |
+| logout 함수 | `window.location.href = 'login.html'` | `/* design-preview: no redirect */` |
+| 401 처리 | `if (res.status === 401) { logout(); return; }` | `/* 401 skipped in design preview */` |
+
+**포함 파일 (11개):**  
+`index.html` · `login.html` · `register.html` · `dashboard.html` · `vocab-new.html` · `vocab.html` · `vocab-import.html` · `test.html` · `test-result.html` · `community.html` · `settings.html`
+
+> **주의:** FrontEnd 파일은 디자인 확인 전용입니다. 실제 기능 수정은 `src/main/resources/static/` 파일에서 진행 후 FrontEnd를 재생성해야 합니다.

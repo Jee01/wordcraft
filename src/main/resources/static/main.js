@@ -2,15 +2,31 @@
 (function () {
   // Hash → HTML 파일 매핑
   const ROUTES = {
-    '#/login':    'login.html',
-    '#/register': 'register.html',
+    '#/login':        'login.html',
+    '#/register':     'register.html',
+    '#/dashboard':    'dashboard.html',
+    '#/vocab/new':    'vocab-new.html',
+    '#/vocab/import': 'vocab-import.html',
+    '#/community':    'community.html',
+    '#/settings':     'settings.html',
   };
 
   function navigate(hash) {
+    // 정적 라우트 매칭
     const target = ROUTES[hash];
-    if (target) {
-      window.location.href = target;
-    }
+    if (target) { window.location.href = target; return; }
+
+    // 동적 라우트: #/vocab/:id
+    const vocabMatch = hash.match(/^#\/vocab\/(\d+)$/);
+    if (vocabMatch) { window.location.href = `vocab.html?id=${vocabMatch[1]}`; return; }
+
+    // 동적 라우트: #/test/:vocabId
+    const testMatch = hash.match(/^#\/test\/(\d+)$/);
+    if (testMatch) { window.location.href = `test.html?vocabId=${testMatch[1]}`; return; }
+
+    // 동적 라우트: #/test/:id/result
+    const resultMatch = hash.match(/^#\/test\/(\d+)\/result$/);
+    if (resultMatch) { window.location.href = `test-result.html?vocabId=${resultMatch[1]}`; return; }
   }
 
   // 페이지 최초 진입 시 처리 (직접 URL에 hash가 붙은 경우)
@@ -90,6 +106,7 @@ const card = document.querySelector('.word-card');
 const genBar = document.getElementById('generatingBar');
 
 function cycleWord() {
+  if (!card || !genBar) return;
   genBar.classList.add('active');
 
   setTimeout(() => {
