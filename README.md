@@ -200,7 +200,7 @@ AI 요청 시 요청 헤더에 포함 (HTTPS 암호화)
 - [ ] 커뮤니티 페이지
 - [ ] API Key 설정 페이지
 - [ ] Spring Boot REST API 구현
-- [ ] JWT 인증
+- [x] JWT 인증
 
 ---
 
