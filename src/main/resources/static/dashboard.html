@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>대시보드 — WordCraft AI</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .page-wrap { padding-top: 80px; min-height: 100vh; background: var(--bg); }
+
+    /* Stats bar */
+    .stats-bar { background: var(--bg-2); border-bottom: 1px solid var(--border); padding: 20px 0; }
+    .stats-bar__inner { display: flex; gap: 32px; align-items: center; flex-wrap: wrap; }
+    .stats-bar .stat strong { font-size: 1.4rem; }
+    .stats-bar .stat span { font-size: 0.78rem; }
+
+    /* Dashboard main */
+    .dash { padding: 48px 0; }
+    .dash__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; flex-wrap: wrap; gap: 12px; }
+    .dash__header h2 { font-size: 1.4rem; font-weight: 800; }
+
+    /* Vocab grid */
+    .vocab-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    @media (max-width: 960px) { .vocab-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 600px) { .vocab-grid { grid-template-columns: 1fr; } }
+
+    .vocab-card {
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      cursor: pointer;
+      transition: border-color .25s, transform .25s;
+      text-decoration: none;
+      color: inherit;
+    }
+    .vocab-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: var(--shadow); }
+
+    .vocab-card__top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .vocab-card__title { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .vocab-card__badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 100px; background: var(--accent-dim); color: var(--accent-2); border: 1px solid var(--accent); font-weight: 600; white-space: nowrap; }
+    .vocab-card__badge--public { background: rgba(62,207,142,.12); color: var(--success); border-color: var(--success); }
+
+    .vocab-card__tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .vocab-card__desc { font-size: 0.83rem; color: var(--text-2); line-height: 1.5; }
+    .vocab-card__meta { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+    .vocab-card__count { font-size: 0.8rem; color: var(--text-3); }
+    .vocab-card__date { font-size: 0.75rem; color: var(--text-3); }
+    .vocab-card__progress { margin-top: 4px; }
+    .vocab-card__progress-label { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-3); margin-bottom: 4px; }
+    .progress-bar { height: 5px; background: var(--bg-4); border-radius: 100px; overflow: hidden; }
+    .progress-bar__fill { height: 100%; background: var(--accent); border-radius: 100px; transition: width .4s; }
+
+    /* New card */
+    .vocab-card--new {
+      border-style: dashed;
+      color: var(--text-3);
+      justify-content: center;
+      align-items: center;
+      min-height: 180px;
+      gap: 8px;
+    }
+    .vocab-card--new:hover { border-color: var(--success); color: var(--success); background: rgba(62,207,142,.05); }
+    .vocab-card--new .new-icon { font-size: 2rem; }
+    .vocab-card--new span { font-size: 0.88rem; font-weight: 600; }
+
+    /* Recent activity */
+    .activity-section { margin-top: 48px; }
+    .activity-section h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; }
+    .activity-list { display: flex; flex-direction: column; gap: 10px; }
+    .activity-item {
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .activity-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .activity-text { flex: 1; }
+    .activity-text strong { font-size: 0.9rem; font-weight: 600; display: block; }
+    .activity-text span { font-size: 0.78rem; color: var(--text-3); }
+    .activity-score { font-size: 1rem; font-weight: 700; color: var(--success); }
+
+    /* Empty state */
+    .empty-state { text-align: center; padding: 80px 24px; color: var(--text-3); }
+    .empty-state__icon { font-size: 3rem; margin-bottom: 16px; }
+    .empty-state h3 { font-size: 1.1rem; font-weight: 700; color: var(--text-2); margin-bottom: 8px; }
+    .empty-state p { font-size: 0.88rem; margin-bottom: 24px; }
+
+    /* Quick action buttons */
+    .quick-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="index.html" class="nav__logo">🔤 WordCraft<span>AI</span></a>
+      <ul class="nav__links">
+        <li><a href="dashboard.html" style="color:var(--text)">대시보드</a></li>
+        <li><a href="vocab-new.html">단어장 만들기</a></li>
+        <li><a href="community.html">커뮤니티</a></li>
+      </ul>
+      <div class="nav__actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="테마 전환">
+          <span class="theme-toggle__icon theme-toggle__icon--dark">🌙</span>
+          <span class="theme-toggle__icon theme-toggle__icon--light">☀️</span>
+        </button>
+        <a href="settings.html" class="btn btn--ghost">⚙️ 설정</a>
+        <button class="btn btn--ghost" id="logoutBtn">로그아웃</button>
+      </div>
+      <button class="nav__hamburger" id="hamburger" aria-label="메뉴">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav__mobile" id="mobileMenu">
+      <a href="dashboard.html">대시보드</a>
+      <a href="vocab-new.html">단어장 만들기</a>
+      <a href="community.html">커뮤니티</a>
+      <a href="settings.html">설정</a>
+      <button class="btn btn--ghost" id="logoutBtnMobile">로그아웃</button>
+    </div>
+  </nav>
+
+  <div class="page-wrap">
+    <!-- STATS BAR -->
+    <div class="stats-bar">
+      <div class="container stats-bar__inner">
+        <div class="stat">
+          <strong id="statVocabs">0</strong>
+          <span>내 단어장</span>
+        </div>
+        <div class="stat__divider"></div>
+        <div class="stat">
+          <strong id="statWords">0</strong>
+          <span>총 단어 수</span>
+        </div>
+        <div class="stat__divider"></div>
+        <div class="stat">
+          <strong id="statStreak">0</strong>
+          <span>연속 학습일</span>
+        </div>
+        <div class="stat__divider"></div>
+        <div class="stat">
+          <strong id="statAvgScore">—</strong>
+          <span>평균 정답률</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="dash">
+      <div class="container">
+        <div class="dash__header">
+          <h2>내 단어장</h2>
+          <div class="quick-actions">
+            <a href="vocab-import.html" class="btn btn--ghost">📥 가져오기</a>
+            <a href="vocab-new.html" class="btn btn--primary">+ 새 단어장</a>
+          </div>
+        </div>
+
+        <!-- Vocab Grid -->
+        <div class="vocab-grid" id="vocabGrid">
+          <!-- JS로 채워짐 -->
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="activity-section">
+          <h3>최근 학습 활동</h3>
+          <div class="activity-list" id="activityList">
+            <!-- JS로 채워짐 -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+  <script>
+    (function () {
+      /* ===== AUTH CHECK ===== */
+      const token = localStorage.getItem('accessToken');
+      if (!token) { window.location.href = 'login.html'; return; }
+
+      /* ===== THEME ===== */
+      const html = document.documentElement;
+      const toggle = document.getElementById('themeToggle');
+      if (localStorage.getItem('wc-theme') === 'light') html.classList.add('light');
+      toggle.addEventListener('click', () => {
+        html.classList.toggle('light');
+        localStorage.setItem('wc-theme', html.classList.contains('light') ? 'light' : 'dark');
+      });
+
+      /* ===== LOGOUT ===== */
+      function logout() {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        window.location.href = 'login.html';
+      }
+      document.getElementById('logoutBtn').addEventListener('click', logout);
+      document.getElementById('logoutBtnMobile').addEventListener('click', logout);
+
+      /* ===== LOAD VOCABS ===== */
+      const grid = document.getElementById('vocabGrid');
+      const actList = document.getElementById('activityList');
+
+      async function loadDashboard() {
+        try {
+          const res = await fetch('/api/vocab/my', {
+            headers: { Authorization: 'Bearer ' + token }
+          });
+          if (res.status === 401) { logout(); return; }
+          const vocabs = await res.json();
+          renderVocabs(vocabs);
+          updateStats(vocabs);
+        } catch {
+          renderVocabsFallback();
+        }
+
+        try {
+          const res2 = await fetch('/api/test/history?limit=5', {
+            headers: { Authorization: 'Bearer ' + token }
+          });
+          if (res2.ok) {
+            const history = await res2.json();
+            renderActivity(history);
+          } else {
+            renderActivityFallback();
+          }
+        } catch {
+          renderActivityFallback();
+        }
+      }
+
+      function renderVocabs(vocabs) {
+        if (!vocabs || vocabs.length === 0) {
+          grid.innerHTML = newCard() + emptyCards();
+          return;
+        }
+        document.getElementById('statVocabs').textContent = vocabs.length;
+        const totalWords = vocabs.reduce((s, v) => s + (v.wordCount || 0), 0);
+        document.getElementById('statWords').textContent = totalWords;
+
+        grid.innerHTML = newCard() + vocabs.map(v => vocabCard(v)).join('');
+      }
+
+      function renderVocabsFallback() {
+        const sampleVocabs = [
+          { id: 1, title: '비즈니스 필수 동사 100', wordCount: 100, learnedCount: 45, tags: ['TOEIC'], isPublic: true, updatedAt: '2026-06-06' },
+          { id: 2, title: '수능 빈출 형용사', wordCount: 60, learnedCount: 60, tags: ['수능'], isPublic: false, updatedAt: '2026-06-05' },
+          { id: 3, title: '토플 학술 어휘', wordCount: 80, learnedCount: 20, tags: ['TOEFL'], isPublic: false, updatedAt: '2026-06-04' },
+        ];
+        renderVocabs(sampleVocabs);
+      }
+
+      function vocabCard(v) {
+        const pct = v.wordCount ? Math.round((v.learnedCount || 0) / v.wordCount * 100) : 0;
+        const tagHtml = (v.tags || []).map(t => `<span class="tag tag--${tagClass(t)}">${t}</span>`).join('');
+        const badgeClass = v.isPublic ? 'vocab-card__badge--public' : '';
+        const badgeLabel = v.isPublic ? '공개' : '비공개';
+        return `
+          <a class="vocab-card reveal" href="vocab.html?id=${v.id}">
+            <div class="vocab-card__top">
+              <div class="vocab-card__title">${escHtml(v.title)}</div>
+              <span class="vocab-card__badge ${badgeClass}">${badgeLabel}</span>
+            </div>
+            <div class="vocab-card__tags">${tagHtml}</div>
+            <div class="vocab-card__meta">
+              <span class="vocab-card__count">📚 ${v.wordCount || 0}단어</span>
+              <span class="vocab-card__date">${v.updatedAt || ''}</span>
+            </div>
+            <div class="vocab-card__progress">
+              <div class="vocab-card__progress-label">
+                <span>학습 진도</span><span>${pct}%</span>
+              </div>
+              <div class="progress-bar"><div class="progress-bar__fill" style="width:${pct}%"></div></div>
+            </div>
+          </a>`;
+      }
+
+      function newCard() {
+        return `<a class="vocab-card vocab-card--new" href="vocab-new.html">
+          <div class="new-icon">➕</div>
+          <span>새 단어장 만들기</span>
+        </a>`;
+      }
+
+      function emptyCards() {
+        return `<div class="empty-state" style="grid-column:1/-1; background:var(--bg-3); border:1px dashed var(--border); border-radius:var(--radius-lg); padding:60px;">
+          <div class="empty-state__icon">📚</div>
+          <h3>아직 단어장이 없어요</h3>
+          <p>첫 단어장을 만들고 AI로 단어를 채워보세요!</p>
+          <a href="vocab-new.html" class="btn btn--primary">단어장 만들기</a>
+        </div>`;
+      }
+
+      function renderActivity(history) {
+        if (!history || history.length === 0) { renderActivityFallback(); return; }
+        actList.innerHTML = history.map(h => `
+          <div class="activity-item">
+            <div class="activity-icon">📝</div>
+            <div class="activity-text">
+              <strong>${escHtml(h.vocabTitle)}</strong>
+              <span>${h.date} · ${h.testType}</span>
+            </div>
+            <div class="activity-score">${h.score}%</div>
+          </div>`).join('');
+      }
+
+      function renderActivityFallback() {
+        actList.innerHTML = `
+          <div class="activity-item">
+            <div class="activity-icon">📝</div>
+            <div class="activity-text">
+              <strong>비즈니스 필수 동사 100</strong>
+              <span>2026-06-06 · 뜻 맞추기</span>
+            </div>
+            <div class="activity-score">87%</div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon">⚡</div>
+            <div class="activity-text">
+              <strong>수능 빈출 형용사</strong>
+              <span>2026-06-05 · 빈칸 채우기</span>
+            </div>
+            <div class="activity-score">72%</div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon">🃏</div>
+            <div class="activity-text">
+              <strong>토플 학술 어휘</strong>
+              <span>2026-06-04 · 플래시카드</span>
+            </div>
+            <div class="activity-score">91%</div>
+          </div>`;
+        document.getElementById('statStreak').textContent = '3';
+        document.getElementById('statAvgScore').textContent = '83%';
+      }
+
+      function updateStats(vocabs) {
+        document.getElementById('statVocabs').textContent = vocabs.length;
+        document.getElementById('statWords').textContent = vocabs.reduce((s, v) => s + (v.wordCount || 0), 0);
+      }
+
+      function tagClass(tag) {
+        if (tag === 'TOEIC') return 'toeic';
+        if (tag === 'TOEFL') return 'toefl';
+        if (tag === '수능') return 'csat';
+        return 'noun';
+      }
+
+      function escHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+
+      loadDashboard();
+
+      /* Scroll reveal */
+      setTimeout(() => {
+        const revealEls = document.querySelectorAll('.reveal');
+        revealEls.forEach((el, i) => { el.style.transitionDelay = `${(i % 6) * 60}ms`; });
+        const obs = new IntersectionObserver(
+          entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
+          { threshold: 0.1 }
+        );
+        revealEls.forEach(el => obs.observe(el));
+      }, 100);
+    })();
+  </script>
+</body>
+</html>

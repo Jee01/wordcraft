@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>단어장 가져오기 — WordCraft AI</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .page-wrap { padding-top: 80px; min-height: 100vh; background: var(--bg); }
+    .page-header { background: var(--bg-2); border-bottom: 1px solid var(--border); padding: 28px 0; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+    .page-header p { color: var(--text-2); font-size: 0.9rem; }
+
+    .import-wrap { padding: 40px 0 80px; }
+    .import-grid { display: grid; grid-template-columns: 1fr 340px; gap: 24px; }
+    @media (max-width: 820px) { .import-grid { grid-template-columns: 1fr; } }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+    .tab-btn {
+      padding: 10px 20px; background: none; border: none;
+      border-bottom: 2px solid transparent; color: var(--text-3);
+      font-size: 0.9rem; font-weight: 600; cursor: pointer;
+      transition: color .2s, border-color .2s; margin-bottom: -1px;
+    }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Form elements */
+    .form-card { background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; }
+    .form-card + .form-card { margin-top: 18px; }
+    .form-card__title { font-size: 0.95rem; font-weight: 700; margin-bottom: 18px; }
+    .form-label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+    .form-input, .form-textarea {
+      width: 100%; background: var(--bg-4); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px;
+      color: var(--text); font-size: 0.9rem; font-family: var(--font);
+      transition: border-color .2s; outline: none;
+    }
+    .form-input:focus, .form-textarea:focus { border-color: var(--accent); }
+    .form-textarea { resize: vertical; min-height: 200px; line-height: 1.7; }
+    .form-hint { font-size: 0.75rem; color: var(--text-3); margin-top: 5px; }
+    .form-group { margin-bottom: 16px; }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed var(--border-2); border-radius: var(--radius-lg);
+      padding: 60px 24px; text-align: center; cursor: pointer;
+      transition: border-color .2s, background .2s;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--accent); background: var(--accent-dim);
+    }
+    .drop-zone__icon { font-size: 3rem; margin-bottom: 12px; }
+    .drop-zone__title { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+    .drop-zone__sub { font-size: 0.83rem; color: var(--text-3); margin-bottom: 16px; }
+    .drop-zone__file { display: none; }
+
+    /* Selected file */
+    .file-selected { display: none; background: var(--bg-4); border-radius: var(--radius); padding: 12px 16px; margin-top: 12px; }
+    .file-selected.show { display: flex; align-items: center; gap: 10px; }
+    .file-selected__name { flex: 1; font-size: 0.85rem; font-weight: 600; }
+    .file-selected__size { font-size: 0.75rem; color: var(--text-3); }
+    .file-remove { background: none; border: none; color: var(--text-3); cursor: pointer; font-size: 1rem; }
+
+    /* Tags selector */
+    .tags-selector { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag-chip {
+      padding: 6px 14px; border: 1.5px solid var(--border-2); border-radius: 100px;
+      font-size: 0.82rem; font-weight: 600; color: var(--text-2); cursor: pointer;
+      transition: all .2s; user-select: none;
+    }
+    .tag-chip:hover { border-color: var(--accent); color: var(--accent-2); }
+    .tag-chip.selected { border-color: var(--accent); color: var(--accent-2); background: var(--accent-dim); }
+
+    /* Sidebar */
+    .sidebar-sticky { position: sticky; top: 88px; }
+    .btn-full { width: 100%; justify-content: center; }
+
+    .api-error {
+      display: none; background: rgba(255,80,80,.12); border: 1px solid rgba(255,80,80,.4);
+      border-radius: var(--radius); padding: 10px 14px; font-size: 0.85rem; color: #ff8080; margin-top: 10px;
+    }
+    .api-success {
+      display: none; background: rgba(62,207,142,.12); border: 1px solid rgba(62,207,142,.4);
+      border-radius: var(--radius); padding: 10px 14px; font-size: 0.85rem; color: var(--success); margin-top: 10px;
+    }
+
+    /* Progress */
+    .gen-progress { display: none; flex-direction: column; align-items: center; gap: 8px; padding: 16px; text-align: center; }
+    .gen-progress.active { display: flex; }
+    .gen-progress__dots { display: flex; gap: 6px; }
+    .gen-progress__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: bounce 1.2s infinite; }
+    .gen-progress__dot:nth-child(2) { animation-delay: .15s; }
+    .gen-progress__dot:nth-child(3) { animation-delay: .3s; }
+    @keyframes bounce { 0%,80%,100% { transform:scale(.6);opacity:.4; } 40% { transform:scale(1);opacity:1; } }
+
+    /* Preview result */
+    .preview-result { display: none; }
+    .preview-result.show { display: block; }
+    .preview-words { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; margin-top: 12px; }
+    .preview-word-item { display: flex; gap: 8px; align-items: center; padding: 7px 10px; background: var(--bg-4); border-radius: 8px; font-size: 0.82rem; }
+    .preview-word-item span { font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="index.html" class="nav__logo">🔤 WordCraft<span>AI</span></a>
+      <ul class="nav__links">
+        <li><a href="dashboard.html">대시보드</a></li>
+        <li><a href="vocab-new.html">단어장 만들기</a></li>
+        <li><a href="community.html">커뮤니티</a></li>
+      </ul>
+      <div class="nav__actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="테마 전환">
+          <span class="theme-toggle__icon theme-toggle__icon--dark">🌙</span>
+          <span class="theme-toggle__icon theme-toggle__icon--light">☀️</span>
+        </button>
+        <a href="settings.html" class="btn btn--ghost">⚙️ 설정</a>
+        <button class="btn btn--ghost" id="logoutBtn">로그아웃</button>
+      </div>
+      <button class="nav__hamburger" id="hamburger" aria-label="메뉴">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav__mobile" id="mobileMenu">
+      <a href="dashboard.html">대시보드</a>
+      <a href="vocab-new.html">단어장 만들기</a>
+      <a href="community.html">커뮤니티</a>
+      <a href="settings.html">설정</a>
+      <button class="btn btn--ghost" id="logoutBtnMobile">로그아웃</button>
+    </div>
+  </nav>
+
+  <div class="page-wrap">
+    <div class="page-header">
+      <div class="container">
+        <h1>📥 단어장 가져오기</h1>
+        <p>텍스트 붙여넣기, 이미지, PDF·DOCX 파일 — 어떤 형태든 AI가 단어장으로 자동 변환합니다.</p>
+      </div>
+    </div>
+
+    <div class="import-wrap">
+      <div class="container">
+        <div class="import-grid">
+
+          <!-- LEFT -->
+          <div>
+            <!-- Tabs -->
+            <div class="tabs">
+              <button class="tab-btn active" data-tab="text">📝 텍스트</button>
+              <button class="tab-btn" data-tab="image">🖼️ 이미지</button>
+              <button class="tab-btn" data-tab="file">📄 파일</button>
+            </div>
+
+            <!-- Text tab -->
+            <div class="tab-panel active" id="tab-text">
+              <div class="form-card">
+                <div class="form-card__title">텍스트 붙여넣기</div>
+                <div class="form-group">
+                  <label class="form-label">텍스트 입력</label>
+                  <textarea class="form-textarea" id="textInput" placeholder="단어 목록, 문장, 단락 등 어떤 형태의 텍스트도 가능합니다.
+
+예시 1 — 단어 목록:
+implement, significant, constitute
+
+예시 2 — 단어장 형식:
+implement: 시행하다
+significant: 중요한
+
+예시 3 — 본문 텍스트:
+The company implemented a significant policy change...
+(AI가 핵심 단어를 추출합니다)"></textarea>
+                  <div class="form-hint">AI가 텍스트에서 학습할 단어를 자동으로 추출합니다.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Image tab -->
+            <div class="tab-panel" id="tab-image">
+              <div class="form-card">
+                <div class="form-card__title">이미지 업로드</div>
+                <div class="drop-zone" id="imageDrop">
+                  <div class="drop-zone__icon">🖼️</div>
+                  <div class="drop-zone__title">이미지를 드래그하거나 클릭해 선택</div>
+                  <div class="drop-zone__sub">JPG, PNG, WEBP 지원 · 최대 10MB<br/>교재 사진, 스크린샷, 손필기 등 OK</div>
+                  <button class="btn btn--ghost btn--sm">파일 선택</button>
+                  <input type="file" class="drop-zone__file" id="imageFile" accept="image/*" />
+                </div>
+                <div class="file-selected" id="imageSelected">
+                  <span>🖼️</span>
+                  <span class="file-selected__name" id="imageFileName"></span>
+                  <span class="file-selected__size" id="imageFileSize"></span>
+                  <button class="file-remove" id="imageRemove">✕</button>
+                </div>
+                <div class="form-hint" style="margin-top:10px;">OCR로 텍스트를 인식한 뒤 AI가 단어를 추출합니다.</div>
+              </div>
+            </div>
+
+            <!-- File tab -->
+            <div class="tab-panel" id="tab-file">
+              <div class="form-card">
+                <div class="form-card__title">파일 업로드</div>
+                <div class="drop-zone" id="fileDrop">
+                  <div class="drop-zone__icon">📄</div>
+                  <div class="drop-zone__title">파일을 드래그하거나 클릭해 선택</div>
+                  <div class="drop-zone__sub">PDF, DOCX, TXT, CSV 지원 · 최대 20MB</div>
+                  <button class="btn btn--ghost btn--sm">파일 선택</button>
+                  <input type="file" class="drop-zone__file" id="docFile" accept=".pdf,.docx,.txt,.csv" />
+                </div>
+                <div class="file-selected" id="fileSelected">
+                  <span>📄</span>
+                  <span class="file-selected__name" id="docFileName"></span>
+                  <span class="file-selected__size" id="docFileSize"></span>
+                  <button class="file-remove" id="fileRemove">✕</button>
+                </div>
+                <div class="form-hint" style="margin-top:10px;">파일에서 텍스트를 추출한 뒤 AI가 학습 단어를 선별합니다.</div>
+              </div>
+            </div>
+
+            <!-- 공통: 태그 및 설정 -->
+            <div class="form-card" style="margin-top:18px;">
+              <div class="form-card__title">⚙️ 변환 설정</div>
+              <div class="form-group">
+                <label class="form-label">단어장 제목 *</label>
+                <input type="text" class="form-input" id="importTitle" placeholder="가져올 단어장의 이름" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">학습 태그</label>
+                <div class="tags-selector" id="tagsSelector">
+                  <div class="tag-chip" data-tag="수능">수능</div>
+                  <div class="tag-chip" data-tag="TOEIC">토익 (TOEIC)</div>
+                  <div class="tag-chip" data-tag="TOEFL">토플 (TOEFL)</div>
+                  <div class="tag-chip" data-tag="TEPS">텝스 (TEPS)</div>
+                  <div class="tag-chip" data-tag="IELTS">IELTS</div>
+                  <div class="tag-chip" data-tag="일상회화">일상회화</div>
+                  <div class="tag-chip" data-tag="비즈니스">비즈니스</div>
+                  <div class="tag-chip" data-tag="학술">학술</div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">추출 단어 수 제한</label>
+                <input type="number" class="form-input" id="maxWords" value="50" min="5" max="200" style="max-width:120px;" />
+                <div class="form-hint">최대 추출할 단어 수 (5~200)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Sidebar -->
+          <div class="sidebar-sticky">
+            <div class="form-card">
+              <div class="form-card__title">🚀 변환하기</div>
+
+              <div class="gen-progress" id="genProgress">
+                <div class="gen-progress__dots">
+                  <div class="gen-progress__dot"></div>
+                  <div class="gen-progress__dot"></div>
+                  <div class="gen-progress__dot"></div>
+                </div>
+                <p style="font-size:0.83rem;color:var(--text-2);">AI가 단어를 추출하고 있습니다...</p>
+              </div>
+
+              <button class="btn btn--primary btn-full" id="importBtn">📥 AI로 변환하기</button>
+              <div class="api-error" id="apiError"></div>
+              <div class="api-success" id="apiSuccess"></div>
+            </div>
+
+            <!-- Preview -->
+            <div class="form-card preview-result" id="previewResult" style="margin-top:18px;">
+              <div class="form-card__title">👁️ 추출 미리보기</div>
+              <p style="font-size:0.78rem;color:var(--text-3);">추출된 단어 <strong id="previewCount">0</strong>개</p>
+              <div class="preview-words" id="previewWords"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+  <script>
+    (function () {
+      const token = localStorage.getItem('accessToken');
+      if (!token) { window.location.href = 'login.html'; return; }
+
+      /* theme */
+      const html = document.documentElement;
+      const toggle = document.getElementById('themeToggle');
+      if (localStorage.getItem('wc-theme') === 'light') html.classList.add('light');
+      toggle.addEventListener('click', () => {
+        html.classList.toggle('light');
+        localStorage.setItem('wc-theme', html.classList.contains('light') ? 'light' : 'dark');
+      });
+
+      /* logout */
+      function logout() { localStorage.removeItem('accessToken'); localStorage.removeItem('refreshToken'); window.location.href = 'login.html'; }
+      document.getElementById('logoutBtn').addEventListener('click', logout);
+      document.getElementById('logoutBtnMobile').addEventListener('click', logout);
+
+      /* Tabs */
+      let activeTab = 'text';
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          activeTab = btn.dataset.tab;
+          document.getElementById('tab-' + activeTab).classList.add('active');
+        });
+      });
+
+      /* Tags */
+      const selectedTags = new Set();
+      document.querySelectorAll('.tag-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const tag = chip.dataset.tag;
+          if (selectedTags.has(tag)) { selectedTags.delete(tag); chip.classList.remove('selected'); }
+          else { selectedTags.add(tag); chip.classList.add('selected'); }
+        });
+      });
+
+      /* File drop zones */
+      function setupDropZone(dropId, fileInputId, selectedId, nameId, sizeId, removeId, accept) {
+        const drop = document.getElementById(dropId);
+        const input = document.getElementById(fileInputId);
+        const selected = document.getElementById(selectedId);
+        const nameEl = document.getElementById(nameId);
+        const sizeEl = document.getElementById(sizeId);
+
+        drop.addEventListener('click', () => input.click());
+        drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag-over'); });
+        drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
+        drop.addEventListener('drop', e => {
+          e.preventDefault(); drop.classList.remove('drag-over');
+          const file = e.dataTransfer.files[0];
+          if (file) showFile(file);
+        });
+        input.addEventListener('change', () => { if (input.files[0]) showFile(input.files[0]); });
+        document.getElementById(removeId).addEventListener('click', () => {
+          input.value = ''; selected.classList.remove('show');
+        });
+
+        function showFile(file) {
+          nameEl.textContent = file.name;
+          sizeEl.textContent = (file.size / 1024 / 1024).toFixed(1) + ' MB';
+          selected.classList.add('show');
+        }
+      }
+
+      setupDropZone('imageDrop', 'imageFile', 'imageSelected', 'imageFileName', 'imageFileSize', 'imageRemove', 'image/*');
+      setupDropZone('fileDrop', 'docFile', 'fileSelected', 'docFileName', 'docFileSize', 'fileRemove', '.pdf,.docx,.txt,.csv');
+
+      /* Import */
+      const importBtn = document.getElementById('importBtn');
+      const genProgress = document.getElementById('genProgress');
+      const apiError = document.getElementById('apiError');
+      const apiSuccess = document.getElementById('apiSuccess');
+
+      importBtn.addEventListener('click', async () => {
+        const title = document.getElementById('importTitle').value.trim();
+        if (!title) { showError('단어장 제목을 입력해주세요.'); return; }
+
+        let body, contentType;
+
+        if (activeTab === 'text') {
+          const text = document.getElementById('textInput').value.trim();
+          if (!text) { showError('변환할 텍스트를 입력해주세요.'); return; }
+          body = JSON.stringify({ title, tags: [...selectedTags], text, maxWords: Number(document.getElementById('maxWords').value) });
+          contentType = 'application/json';
+        } else {
+          const fileInput = document.getElementById(activeTab === 'image' ? 'imageFile' : 'docFile');
+          const file = fileInput.files[0];
+          if (!file) { showError('파일을 선택해주세요.'); return; }
+          const fd = new FormData();
+          fd.append('file', file);
+          fd.append('title', title);
+          fd.append('tags', JSON.stringify([...selectedTags]));
+          fd.append('maxWords', document.getElementById('maxWords').value);
+          body = fd;
+        }
+
+        importBtn.disabled = true; importBtn.textContent = '변환 중...';
+        genProgress.classList.add('active');
+        apiError.style.display = 'none'; apiSuccess.style.display = 'none';
+
+        try {
+          const endpoint = activeTab === 'text' ? '/api/vocab/import/text'
+            : activeTab === 'image' ? '/api/vocab/import/image' : '/api/vocab/import/file';
+          const headers = { Authorization: 'Bearer ' + token };
+          if (contentType) headers['Content-Type'] = contentType;
+
+          const res = await fetch(endpoint, { method: 'POST', headers, body });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || '변환에 실패했습니다.');
+
+          showPreview(data.words || []);
+          apiSuccess.style.display = 'block';
+          apiSuccess.textContent = `✅ ${data.wordCount || 0}개 단어가 추출되었습니다! 단어장으로 이동합니다...`;
+          setTimeout(() => { window.location.href = `vocab.html?id=${data.id}`; }, 1500);
+        } catch (err) {
+          showError(err.message || '서버와 통신할 수 없습니다.');
+          /* Show demo preview on error */
+          showPreview(['implement', 'significant', 'constitute', 'elaborate', 'paradigm']);
+        } finally {
+          importBtn.disabled = false; importBtn.textContent = '📥 AI로 변환하기';
+          genProgress.classList.remove('active');
+        }
+      });
+
+      function showPreview(words) {
+        const result = document.getElementById('previewResult');
+        const list = document.getElementById('previewWords');
+        document.getElementById('previewCount').textContent = words.length;
+        list.innerHTML = words.map((w, i) => `
+          <div class="preview-word-item">
+            <span style="color:var(--text-3);font-size:0.72rem;">${i+1}</span>
+            <span>${typeof w === 'string' ? escHtml(w) : escHtml(w.word || w)}</span>
+          </div>`).join('');
+        result.classList.add('show');
+      }
+
+      function showError(msg) { apiError.style.display = 'block'; apiError.textContent = msg; }
+      function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    })();
+  </script>
+</body>
+</html>

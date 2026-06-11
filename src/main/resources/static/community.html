@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>커뮤니티 — WordCraft AI</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .page-wrap { padding-top: 80px; min-height: 100vh; background: var(--bg); }
+
+    /* Hero bar */
+    .community-hero { background: var(--bg-2); border-bottom: 1px solid var(--border); padding: 36px 0; }
+    .community-hero h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 6px; }
+    .community-hero p { color: var(--text-2); font-size: 0.9rem; margin-bottom: 20px; }
+
+    /* Search bar */
+    .search-bar { display: flex; gap: 10px; flex-wrap: wrap; }
+    .search-input-wrap { position: relative; flex: 1; min-width: 200px; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
+    .search-input {
+      width: 100%; background: var(--bg-3); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px 10px 36px;
+      color: var(--text); font-size: 0.9rem; outline: none; transition: border-color .2s;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .sort-select {
+      background: var(--bg-3); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px;
+      color: var(--text); font-size: 0.9rem; outline: none; cursor: pointer;
+    }
+
+    /* Tag filters */
+    .tag-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .filter-chip {
+      padding: 5px 14px; border: 1.5px solid var(--border-2); border-radius: 100px;
+      font-size: 0.8rem; font-weight: 600; color: var(--text-2); cursor: pointer; transition: all .2s;
+    }
+    .filter-chip:hover { border-color: var(--accent); color: var(--accent-2); }
+    .filter-chip.active { border-color: var(--accent); color: var(--accent-2); background: var(--accent-dim); }
+
+    /* Content area */
+    .community-content { padding: 36px 0 80px; }
+    .content-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 10px; }
+    .content-header h2 { font-size: 1rem; font-weight: 700; color: var(--text-2); }
+
+    /* Vocab grid */
+    .vocab-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
+    @media (max-width: 960px) { .vocab-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 600px) { .vocab-grid { grid-template-columns: 1fr; } }
+
+    .pub-card {
+      background: var(--bg-3); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 22px;
+      display: flex; flex-direction: column; gap: 10px;
+      transition: border-color .25s, transform .25s;
+    }
+    .pub-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: var(--shadow); }
+
+    .pub-card__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .pub-card__tags { display: flex; gap: 5px; flex-wrap: wrap; }
+    .pub-card__likes { font-size: 0.82rem; color: #ff6b8a; white-space: nowrap; cursor: pointer; }
+    .pub-card__likes:hover { color: #ff4466; }
+
+    .pub-card__title { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .pub-card__desc { font-size: 0.83rem; color: var(--text-2); line-height: 1.5; flex: 1; }
+    .pub-card__meta { display: flex; gap: 12px; font-size: 0.76rem; color: var(--text-3); flex-wrap: wrap; }
+
+    .pub-card__footer { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+    .pub-card__author { font-size: 0.78rem; color: var(--text-3); }
+
+    /* Load more */
+    .load-more { text-align: center; margin-top: 36px; }
+
+    /* Empty */
+    .empty-state { text-align: center; padding: 80px 24px; color: var(--text-3); grid-column: 1/-1; }
+    .empty-state__icon { font-size: 3rem; margin-bottom: 16px; }
+
+    /* Skeleton */
+    .skeleton { background: var(--bg-4); border-radius: 6px; animation: shimmer 1.5s infinite; }
+    @keyframes shimmer { 0%,100% { opacity:.6; } 50% { opacity:1; } }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="index.html" class="nav__logo">🔤 WordCraft<span>AI</span></a>
+      <ul class="nav__links">
+        <li><a href="dashboard.html">대시보드</a></li>
+        <li><a href="vocab-new.html">단어장 만들기</a></li>
+        <li><a href="community.html" style="color:var(--text)">커뮤니티</a></li>
+      </ul>
+      <div class="nav__actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="테마 전환">
+          <span class="theme-toggle__icon theme-toggle__icon--dark">🌙</span>
+          <span class="theme-toggle__icon theme-toggle__icon--light">☀️</span>
+        </button>
+        <a href="settings.html" class="btn btn--ghost">⚙️ 설정</a>
+        <button class="btn btn--ghost" id="logoutBtn">로그아웃</button>
+      </div>
+      <button class="nav__hamburger" id="hamburger" aria-label="메뉴">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav__mobile" id="mobileMenu">
+      <a href="dashboard.html">대시보드</a>
+      <a href="vocab-new.html">단어장 만들기</a>
+      <a href="community.html">커뮤니티</a>
+      <a href="settings.html">설정</a>
+      <button class="btn btn--ghost" id="logoutBtnMobile">로그아웃</button>
+    </div>
+  </nav>
+
+  <div class="page-wrap">
+    <!-- Hero / Search -->
+    <div class="community-hero">
+      <div class="container">
+        <h1>🌐 커뮤니티 단어장</h1>
+        <p>다른 사람들이 만든 단어장을 탐색하고 복사해 바로 학습하세요.</p>
+        <div class="search-bar">
+          <div class="search-input-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="searchInput" placeholder="단어장 제목, 태그, 작성자 검색..." />
+          </div>
+          <select class="sort-select" id="sortSelect">
+            <option value="likes">인기순</option>
+            <option value="newest">최신순</option>
+            <option value="words">단어 수</option>
+          </select>
+        </div>
+        <div class="tag-filters" id="tagFilters">
+          <div class="filter-chip active" data-tag="all">전체</div>
+          <div class="filter-chip" data-tag="수능">수능</div>
+          <div class="filter-chip" data-tag="TOEIC">토익</div>
+          <div class="filter-chip" data-tag="TOEFL">토플</div>
+          <div class="filter-chip" data-tag="TEPS">텝스</div>
+          <div class="filter-chip" data-tag="IELTS">IELTS</div>
+          <div class="filter-chip" data-tag="일상회화">일상회화</div>
+          <div class="filter-chip" data-tag="비즈니스">비즈니스</div>
+          <div class="filter-chip" data-tag="학술">학술</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="community-content">
+      <div class="container">
+        <div class="content-header">
+          <h2 id="resultCount">단어장을 불러오는 중...</h2>
+        </div>
+        <div class="vocab-grid" id="vocabGrid">
+          <!-- JS로 채워짐 -->
+        </div>
+        <div class="load-more" id="loadMore" style="display:none;">
+          <button class="btn btn--ghost" id="loadMoreBtn">더 보기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+  <script>
+    (function () {
+      const token = localStorage.getItem('accessToken');
+      if (!token) { window.location.href = 'login.html'; return; }
+
+      const html = document.documentElement;
+      const toggle = document.getElementById('themeToggle');
+      if (localStorage.getItem('wc-theme') === 'light') html.classList.add('light');
+      toggle.addEventListener('click', () => {
+        html.classList.toggle('light');
+        localStorage.setItem('wc-theme', html.classList.contains('light') ? 'light' : 'dark');
+      });
+
+      function logout() { localStorage.removeItem('accessToken'); localStorage.removeItem('refreshToken'); window.location.href = 'login.html'; }
+      document.getElementById('logoutBtn').addEventListener('click', logout);
+      document.getElementById('logoutBtnMobile').addEventListener('click', logout);
+
+      /* State */
+      let activeTag = 'all';
+      let sortBy = 'likes';
+      let searchQ = '';
+      let page = 0;
+      const PAGE_SIZE = 9;
+      let allData = [];
+
+      /* Sample data */
+      const sampleVocabs = [
+        { id:1, title:'비즈니스 필수 동사 100', description:'실제 이메일·미팅에서 자주 쓰이는 동사 중심으로 구성', tags:['TOEIC','비즈니스'], wordCount:100, likes:128, author:'@user_kim', updatedAt:'2026-06-06' },
+        { id:2, title:'수능 빈출 형용사 모음', description:'최근 5년간 수능에 출제된 형용사만 엄선', tags:['수능'], wordCount:60, likes:94, author:'@user_park', updatedAt:'2026-06-05' },
+        { id:3, title:'Academic Word List 핵심', description:'AWL 570단어 중 고빈도 학술 어휘 정리', tags:['TOEFL','학술'], wordCount:80, likes:77, author:'@user_lee', updatedAt:'2026-06-04' },
+        { id:4, title:'토익 RC 빈출 명사', description:'Part 5,6 독해에서 자주 나오는 명사 정리', tags:['TOEIC'], wordCount:50, likes:65, author:'@study_master', updatedAt:'2026-06-03' },
+        { id:5, title:'일상 영어 회화 표현 200', description:'실생활에서 바로 쓸 수 있는 구어체 표현 모음', tags:['일상회화'], wordCount:200, likes:112, author:'@everyday_eng', updatedAt:'2026-06-02' },
+        { id:6, title:'IELTS Academic 필수 어휘', description:'IELTS 7.0 이상을 위한 학술적 표현 중심', tags:['IELTS','학술'], wordCount:120, likes:58, author:'@ielts_pro', updatedAt:'2026-06-01' },
+        { id:7, title:'텝스 고급 어휘 300', description:'텝스 500점 이상을 위한 고난도 어휘 모음', tags:['TEPS'], wordCount:300, likes:43, author:'@teps_king', updatedAt:'2026-05-31' },
+        { id:8, title:'비즈니스 영어 이메일 표현', description:'실제 업무 이메일에서 쓰이는 공손한 표현 모음', tags:['비즈니스'], wordCount:70, likes:89, author:'@biz_eng', updatedAt:'2026-05-30' },
+        { id:9, title:'수능 어법 핵심 정리', description:'수능 어법 문제에 자주 나오는 핵심 포인트', tags:['수능'], wordCount:45, likes:71, author:'@csat_master', updatedAt:'2026-05-29' },
+        { id:10, title:'토플 Writing 고급 어휘', description:'TOEFL Writing 고득점을 위한 학문적 표현', tags:['TOEFL'], wordCount:90, likes:66, author:'@toefl_guru', updatedAt:'2026-05-28' },
+        { id:11, title:'미드로 배우는 구어체', description:'인기 미드 대사에서 추출한 실전 회화 표현', tags:['일상회화'], wordCount:150, likes:135, author:'@drama_fan', updatedAt:'2026-05-27' },
+        { id:12, title:'경제 경영 전문 용어', description:'뉴스·보고서에서 자주 쓰이는 경제 용어 정리', tags:['비즈니스','학술'], wordCount:85, likes:52, author:'@biz_vocab', updatedAt:'2026-05-26' },
+      ];
+
+      async function loadVocabs() {
+        try {
+          const qs = new URLSearchParams({ tag: activeTag, sort: sortBy, q: searchQ, page, size: PAGE_SIZE });
+          const res = await fetch(`/api/community/vocabs?${qs}`, {
+            headers: { Authorization: 'Bearer ' + token }
+          });
+          if (res.status === 401) { logout(); return; }
+          const data = await res.json();
+          allData = page === 0 ? (data.content || data) : [...allData, ...(data.content || data)];
+          renderGrid();
+          const hasMore = data.hasMore || (data.content && data.content.length === PAGE_SIZE);
+          document.getElementById('loadMore').style.display = hasMore ? 'block' : 'none';
+        } catch {
+          allData = filterSample();
+          renderGrid();
+          document.getElementById('loadMore').style.display = 'none';
+        }
+      }
+
+      function filterSample() {
+        return sampleVocabs.filter(v => {
+          const matchTag = activeTag === 'all' || v.tags.includes(activeTag);
+          const matchQ = !searchQ || v.title.toLowerCase().includes(searchQ) || v.author.toLowerCase().includes(searchQ);
+          return matchTag && matchQ;
+        }).sort((a, b) => {
+          if (sortBy === 'likes') return b.likes - a.likes;
+          if (sortBy === 'words') return b.wordCount - a.wordCount;
+          return b.id - a.id;
+        });
+      }
+
+      function renderGrid() {
+        const grid = document.getElementById('vocabGrid');
+        document.getElementById('resultCount').textContent = `단어장 ${allData.length}개`;
+
+        if (allData.length === 0) {
+          grid.innerHTML = `<div class="empty-state">
+            <div class="empty-state__icon">🔍</div>
+            <h3 style="color:var(--text-2);margin-bottom:8px;">검색 결과가 없어요</h3>
+            <p>다른 키워드나 태그로 검색해보세요.</p>
+          </div>`;
+          return;
+        }
+
+        grid.innerHTML = allData.map(v => pubCard(v)).join('');
+
+        /* Like buttons */
+        grid.querySelectorAll('.like-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleLike(btn);
+          });
+        });
+
+        /* Copy buttons */
+        grid.querySelectorAll('.copy-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            copyVocab(btn);
+          });
+        });
+
+        /* Reveal */
+        setTimeout(() => {
+          grid.querySelectorAll('.reveal').forEach((el, i) => {
+            el.style.transitionDelay = `${(i % 6) * 60}ms`;
+            const obs = new IntersectionObserver(entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }), { threshold: 0.05 });
+            obs.observe(el);
+          });
+        }, 50);
+      }
+
+      function pubCard(v) {
+        const tagHtml = (v.tags || []).map(t => `<span class="tag tag--${tagClass(t)}">${t}</span>`).join('');
+        return `
+          <div class="pub-card reveal">
+            <div class="pub-card__top">
+              <div class="pub-card__tags">${tagHtml}</div>
+              <button class="pub-card__likes like-btn" data-id="${v.id}">♥ ${v.likes || 0}</button>
+            </div>
+            <div class="pub-card__title">${escHtml(v.title)}</div>
+            <div class="pub-card__desc">${escHtml(v.description || '')}</div>
+            <div class="pub-card__meta">
+              <span>📚 ${v.wordCount || 0}단어</span>
+              <span>${v.updatedAt || ''}</span>
+            </div>
+            <div class="pub-card__footer">
+              <span class="pub-card__author">by ${escHtml(v.author || '')}</span>
+              <button class="btn btn--sm copy-btn" data-id="${v.id}">복사하기</button>
+            </div>
+          </div>`;
+      }
+
+      async function toggleLike(btn) {
+        const vocabId = btn.dataset.id;
+        const current = parseInt(btn.textContent.replace('♥ ', '')) || 0;
+        const liked = btn.classList.contains('liked');
+        btn.classList.toggle('liked');
+        btn.textContent = `♥ ${liked ? current - 1 : current + 1}`;
+        btn.style.color = liked ? '' : '#ff4466';
+        try {
+          await fetch(`/api/community/vocabs/${vocabId}/like`, {
+            method: liked ? 'DELETE' : 'POST',
+            headers: { Authorization: 'Bearer ' + token }
+          });
+        } catch { /* optimistic */ }
+      }
+
+      async function copyVocab(btn) {
+        const vocabId = btn.dataset.id;
+        btn.disabled = true; btn.textContent = '복사 중...';
+        try {
+          const res = await fetch(`/api/community/vocabs/${vocabId}/copy`, {
+            method: 'POST', headers: { Authorization: 'Bearer ' + token }
+          });
+          const data = await res.json();
+          if (res.ok) {
+            btn.textContent = '✅ 복사됨';
+            btn.style.color = 'var(--success)';
+            setTimeout(() => { window.location.href = `vocab.html?id=${data.id}`; }, 800);
+          } else {
+            btn.disabled = false; btn.textContent = '복사하기';
+          }
+        } catch {
+          /* fallback: go to dashboard */
+          btn.textContent = '✅ 복사됨';
+          setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
+        }
+      }
+
+      /* Tag filter */
+      document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          activeTag = chip.dataset.tag;
+          page = 0;
+          loadVocabs();
+        });
+      });
+
+      /* Sort */
+      document.getElementById('sortSelect').addEventListener('change', e => {
+        sortBy = e.target.value; page = 0; loadVocabs();
+      });
+
+      /* Search */
+      let searchTimer;
+      document.getElementById('searchInput').addEventListener('input', e => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+          searchQ = e.target.value.toLowerCase().trim();
+          page = 0;
+          loadVocabs();
+        }, 300);
+      });
+
+      /* Load more */
+      document.getElementById('loadMoreBtn').addEventListener('click', () => {
+        page++;
+        loadVocabs();
+      });
+
+      function tagClass(t) {
+        if (t === 'TOEIC') return 'toeic'; if (t === 'TOEFL') return 'toefl';
+        if (t === '수능') return 'csat'; return 'noun';
+      }
+      function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+      loadVocabs();
+    })();
+  </script>
+</body>
+</html>

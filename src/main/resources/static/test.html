@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>테스트 — WordCraft AI</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .page-wrap { padding-top: 80px; min-height: 100vh; background: var(--bg); }
+
+    /* Type select screen */
+    .type-screen { padding: 60px 0; }
+    .type-screen__title { text-align: center; font-size: 1.6rem; font-weight: 800; margin-bottom: 8px; }
+    .type-screen__sub { text-align: center; color: var(--text-2); font-size: 0.9rem; margin-bottom: 48px; }
+    .type-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; max-width: 800px; margin: 0 auto 40px; }
+    @media (max-width: 700px) { .type-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 440px) { .type-grid { grid-template-columns: 1fr; } }
+
+    .type-card {
+      background: var(--bg-3); border: 2px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px 18px;
+      text-align: center; cursor: pointer;
+      transition: border-color .2s, transform .2s, background .2s;
+    }
+    .type-card:hover { border-color: var(--accent); transform: translateY(-3px); }
+    .type-card.selected { border-color: var(--accent); background: var(--accent-dim); }
+    .type-card__icon { font-size: 2.2rem; margin-bottom: 10px; }
+    .type-card__name { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+    .type-card__desc { font-size: 0.78rem; color: var(--text-3); }
+
+    .start-area { text-align: center; }
+
+    /* Quiz screen */
+    .quiz-screen { display: none; padding: 40px 0 80px; }
+    .quiz-screen.active { display: block; }
+
+    .quiz-progress-bar { height: 5px; background: var(--bg-4); border-radius: 100px; overflow: hidden; margin-bottom: 32px; }
+    .quiz-progress-bar__fill { height: 100%; background: var(--accent); border-radius: 100px; transition: width .4s; }
+    .quiz-progress-label { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-3); margin-bottom: 8px; }
+
+    .quiz-card { background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 36px; max-width: 680px; margin: 0 auto; }
+    .quiz-type-badge { font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
+    .quiz-question { font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; }
+    .quiz-ipa { font-size: 0.9rem; color: var(--text-3); margin-bottom: 28px; }
+
+    /* Multiple choice */
+    .choices { display: flex; flex-direction: column; gap: 10px; }
+    .choice-btn {
+      padding: 14px 18px; background: var(--bg-4); border: 1.5px solid var(--border);
+      border-radius: var(--radius); color: var(--text); font-size: 0.92rem; font-weight: 500;
+      cursor: pointer; text-align: left; transition: border-color .2s, background .2s;
+    }
+    .choice-btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-dim); }
+    .choice-btn.correct { border-color: var(--success) !important; background: rgba(62,207,142,.12) !important; color: var(--success); }
+    .choice-btn.wrong { border-color: #e55 !important; background: rgba(229,85,85,.1) !important; color: #e55; }
+
+    /* Fill in blank */
+    .fill-input {
+      width: 100%; background: var(--bg-4); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px;
+      color: var(--text); font-size: 1rem; font-family: var(--font); outline: none;
+      transition: border-color .2s;
+    }
+    .fill-input:focus { border-color: var(--accent); }
+    .fill-input.correct { border-color: var(--success); background: rgba(62,207,142,.08); }
+    .fill-input.wrong { border-color: #e55; background: rgba(229,85,85,.08); }
+
+    /* Flashcard */
+    .flashcard-wrap { perspective: 1000px; }
+    .flashcard {
+      width: 100%; min-height: 200px;
+      position: relative; transform-style: preserve-3d;
+      transition: transform .5s; cursor: pointer;
+    }
+    .flashcard.flipped { transform: rotateY(180deg); }
+    .flashcard__face {
+      position: absolute; inset: 0;
+      backface-visibility: hidden; display: flex;
+      flex-direction: column; align-items: center; justify-content: center;
+      background: var(--bg-4); border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px; text-align: center;
+    }
+    .flashcard__back { transform: rotateY(180deg); background: var(--accent-dim); border-color: var(--accent); }
+    .flashcard__hint { font-size: 0.75rem; color: var(--text-3); margin-bottom: 12px; }
+    .flashcard__word { font-size: 1.8rem; font-weight: 800; }
+    .flashcard__meaning { font-size: 1.1rem; font-weight: 700; color: var(--accent-2); margin-bottom: 8px; }
+    .flashcard__example { font-size: 0.85rem; color: var(--text-2); font-style: italic; }
+
+    /* Feedback */
+    .quiz-feedback { display: none; margin-top: 20px; padding: 14px 16px; border-radius: var(--radius); font-size: 0.88rem; }
+    .quiz-feedback.show { display: block; }
+    .quiz-feedback.correct { background: rgba(62,207,142,.12); border: 1px solid rgba(62,207,142,.4); color: var(--success); }
+    .quiz-feedback.wrong { background: rgba(229,85,85,.1); border: 1px solid rgba(229,85,85,.3); color: #ff8080; }
+
+    .quiz-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; }
+    .quiz-score { font-size: 0.85rem; color: var(--text-3); }
+
+    /* Flashcard controls */
+    .flash-controls { display: flex; gap: 12px; justify-content: center; margin-top: 16px; }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="index.html" class="nav__logo">🔤 WordCraft<span>AI</span></a>
+      <ul class="nav__links">
+        <li><a href="dashboard.html">대시보드</a></li>
+        <li><a href="vocab-new.html">단어장 만들기</a></li>
+        <li><a href="community.html">커뮤니티</a></li>
+      </ul>
+      <div class="nav__actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="테마 전환">
+          <span class="theme-toggle__icon theme-toggle__icon--dark">🌙</span>
+          <span class="theme-toggle__icon theme-toggle__icon--light">☀️</span>
+        </button>
+        <a href="settings.html" class="btn btn--ghost">⚙️ 설정</a>
+        <button class="btn btn--ghost" id="logoutBtn">로그아웃</button>
+      </div>
+      <button class="nav__hamburger" id="hamburger" aria-label="메뉴">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav__mobile" id="mobileMenu">
+      <a href="dashboard.html">대시보드</a>
+      <a href="vocab-new.html">단어장 만들기</a>
+      <a href="community.html">커뮤니티</a>
+      <a href="settings.html">설정</a>
+      <button class="btn btn--ghost" id="logoutBtnMobile">로그아웃</button>
+    </div>
+  </nav>
+
+  <div class="page-wrap">
+    <!-- Type Selection -->
+    <div class="type-screen" id="typeScreen">
+      <div class="container">
+        <div class="type-screen__title">테스트 유형 선택</div>
+        <div class="type-screen__sub" id="vocabInfoLabel">단어장을 불러오는 중...</div>
+        <div class="type-grid">
+          <div class="type-card reveal selected" data-type="meaning">
+            <div class="type-card__icon">🎯</div>
+            <div class="type-card__name">뜻 맞추기</div>
+            <div class="type-card__desc">단어를 보고 올바른 뜻 선택</div>
+          </div>
+          <div class="type-card reveal" data-type="fill">
+            <div class="type-card__icon">✏️</div>
+            <div class="type-card__name">빈칸 채우기</div>
+            <div class="type-card__desc">예문의 빈칸에 단어 입력</div>
+          </div>
+          <div class="type-card reveal" data-type="flashcard">
+            <div class="type-card__icon">🃏</div>
+            <div class="type-card__name">플래시카드</div>
+            <div class="type-card__desc">카드를 뒤집어 뜻 확인</div>
+          </div>
+          <div class="type-card reveal" data-type="spelling">
+            <div class="type-card__icon">🔡</div>
+            <div class="type-card__name">스펠링</div>
+            <div class="type-card__desc">뜻을 보고 단어 철자 입력</div>
+          </div>
+          <div class="type-card reveal" data-type="word2meaning">
+            <div class="type-card__icon">🔀</div>
+            <div class="type-card__name">단어↔뜻 연결</div>
+            <div class="type-card__desc">단어와 뜻을 올바르게 연결</div>
+          </div>
+        </div>
+        <div class="start-area">
+          <button class="btn btn--primary btn--lg" id="startBtn">테스트 시작하기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quiz Screen -->
+    <div class="quiz-screen" id="quizScreen">
+      <div class="container">
+        <div style="max-width:680px;margin:0 auto;">
+          <div class="quiz-progress-label">
+            <span id="progressLabel">1 / 10</span>
+            <span id="scoreLabel">정답: 0개</span>
+          </div>
+          <div class="quiz-progress-bar">
+            <div class="quiz-progress-bar__fill" id="progressFill" style="width:10%"></div>
+          </div>
+        </div>
+
+        <div class="quiz-card" id="quizCard">
+          <!-- JS로 채워짐 -->
+        </div>
+
+        <div style="max-width:680px;margin:16px auto 0;display:flex;justify-content:flex-end;">
+          <button class="btn btn--ghost btn--sm" id="skipBtn">건너뛰기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+  <script>
+    (function () {
+      const token = localStorage.getItem('accessToken');
+      if (!token) { window.location.href = 'login.html'; return; }
+
+      const html = document.documentElement;
+      const toggle = document.getElementById('themeToggle');
+      if (localStorage.getItem('wc-theme') === 'light') html.classList.add('light');
+      toggle.addEventListener('click', () => {
+        html.classList.toggle('light');
+        localStorage.setItem('wc-theme', html.classList.contains('light') ? 'light' : 'dark');
+      });
+
+      function logout() { localStorage.removeItem('accessToken'); localStorage.removeItem('refreshToken'); window.location.href = 'login.html'; }
+      document.getElementById('logoutBtn').addEventListener('click', logout);
+      document.getElementById('logoutBtnMobile').addEventListener('click', logout);
+
+      /* Reveal */
+      setTimeout(() => {
+        document.querySelectorAll('.reveal').forEach((el, i) => {
+          el.style.transitionDelay = `${i * 60}ms`;
+          const obs = new IntersectionObserver(entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }), { threshold: 0.1 });
+          obs.observe(el);
+        });
+      }, 50);
+
+      const params = new URLSearchParams(window.location.search);
+      const vocabId = params.get('vocabId');
+
+      /* Test type selection */
+      let selectedType = 'meaning';
+      document.querySelectorAll('.type-card').forEach(card => {
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          selectedType = card.dataset.type;
+        });
+      });
+
+      /* Sample words for fallback */
+      const sampleWords = [
+        { id:1, word:'implement', ipa:'/ˈɪmplɪmənt/', meaning:'시행하다 · 실행하다', pos:'동사', example:'The company will ___ the new policy next quarter.' },
+        { id:2, word:'significant', ipa:'/sɪɡˈnɪfɪkənt/', meaning:'중요한 · 상당한', pos:'형용사', example:'There was a ___ improvement in test scores.' },
+        { id:3, word:'constitute', ipa:'/ˈkɒnstɪtjuːt/', meaning:'구성하다 · ~에 해당하다', pos:'동사', example:'Women ___ 40% of the workforce.' },
+        { id:4, word:'elaborate', ipa:'/ɪˈlæbərət/', meaning:'정교한 · 자세히 설명하다', pos:'형용사/동사', example:'She gave an ___ explanation.' },
+        { id:5, word:'paradigm', ipa:'/ˈpærədaɪm/', meaning:'패러다임 · 전형적인 예', pos:'명사', example:'This discovery created a new ___ in science.' },
+      ];
+
+      let words = [];
+      let vocabTitle = '';
+
+      async function loadVocab() {
+        if (!vocabId) { words = sampleWords; vocabTitle = '샘플 단어장'; updateVocabLabel(); return; }
+        try {
+          const res = await fetch(`/api/vocab/${vocabId}`, { headers: { Authorization: 'Bearer ' + token } });
+          if (res.status === 401) { logout(); return; }
+          const data = await res.json();
+          words = data.words || sampleWords;
+          vocabTitle = data.title || '';
+          updateVocabLabel();
+        } catch {
+          words = sampleWords; vocabTitle = '샘플 단어장'; updateVocabLabel();
+        }
+      }
+
+      function updateVocabLabel() {
+        document.getElementById('vocabInfoLabel').textContent = `${vocabTitle} · ${words.length}개 단어`;
+      }
+
+      /* Quiz state */
+      let questions = [];
+      let qIdx = 0;
+      let score = 0;
+      let results = [];
+      let answered = false;
+
+      document.getElementById('startBtn').addEventListener('click', () => {
+        if (words.length === 0) return;
+        questions = shuffle([...words]);
+        qIdx = 0; score = 0; results = [];
+        document.getElementById('typeScreen').style.display = 'none';
+        document.getElementById('quizScreen').classList.add('active');
+        showQuestion();
+      });
+
+      document.getElementById('skipBtn').addEventListener('click', () => {
+        if (!answered) {
+          results.push({ word: questions[qIdx], correct: false, skipped: true });
+          nextQuestion();
+        }
+      });
+
+      function showQuestion() {
+        answered = false;
+        const w = questions[qIdx];
+        const total = questions.length;
+        document.getElementById('progressLabel').textContent = `${qIdx + 1} / ${total}`;
+        document.getElementById('scoreLabel').textContent = `정답: ${score}개`;
+        document.getElementById('progressFill').style.width = `${((qIdx + 1) / total) * 100}%`;
+
+        if (selectedType === 'flashcard') renderFlashcard(w);
+        else if (selectedType === 'fill') renderFill(w);
+        else if (selectedType === 'spelling') renderSpelling(w);
+        else renderMeaning(w);
+      }
+
+      function renderMeaning(w) {
+        const distractors = words.filter(x => x.id !== w.id).map(x => x.meaning);
+        const choices = shuffle([w.meaning, ...shuffle(distractors).slice(0, 3)]);
+        document.getElementById('quizCard').innerHTML = `
+          <div class="quiz-type-badge">뜻 맞추기</div>
+          <div class="quiz-question">${escHtml(w.word)}</div>
+          <div class="quiz-ipa">${escHtml(w.ipa || '')}</div>
+          <div class="choices">
+            ${choices.map((c, i) => `<button class="choice-btn" data-answer="${escAttr(c)}">${escHtml(c)}</button>`).join('')}
+          </div>
+          <div class="quiz-feedback" id="qFeedback"></div>
+          <div class="quiz-nav">
+            <span class="quiz-score">🎯 ${score} / ${qIdx}</span>
+            <button class="btn btn--primary btn--sm" id="nextBtn" style="display:none">다음 →</button>
+          </div>`;
+        document.querySelectorAll('.choice-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            if (answered) return;
+            answered = true;
+            const isCorrect = btn.dataset.answer === w.meaning;
+            document.querySelectorAll('.choice-btn').forEach(b => {
+              b.disabled = true;
+              if (b.dataset.answer === w.meaning) b.classList.add('correct');
+              else if (b === btn && !isCorrect) b.classList.add('wrong');
+            });
+            if (isCorrect) score++;
+            results.push({ word: w, correct: isCorrect });
+            showFeedback(isCorrect, w.meaning);
+          });
+        });
+      }
+
+      function renderFill(w) {
+        document.getElementById('quizCard').innerHTML = `
+          <div class="quiz-type-badge">빈칸 채우기</div>
+          <div class="quiz-question" style="font-size:1rem;font-weight:600;color:var(--text-2);margin-bottom:20px;">"${escHtml(w.example || w.word + '를 사용한 예문입니다.')}"</div>
+          <div class="quiz-ipa" style="margin-bottom:12px;">뜻 힌트: ${escHtml(w.meaning)}</div>
+          <input type="text" class="fill-input" id="fillInput" placeholder="단어를 입력하세요..." autocomplete="off" />
+          <div class="quiz-feedback" id="qFeedback"></div>
+          <div class="quiz-nav" style="margin-top:16px;">
+            <span class="quiz-score">🎯 ${score} / ${qIdx}</span>
+            <button class="btn btn--primary btn--sm" id="submitFill">확인</button>
+          </div>`;
+        const input = document.getElementById('fillInput');
+        input.focus();
+        document.getElementById('submitFill').addEventListener('click', () => checkFill(w));
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') checkFill(w); });
+      }
+
+      function checkFill(w) {
+        if (answered) return;
+        answered = true;
+        const val = document.getElementById('fillInput').value.trim().toLowerCase();
+        const isCorrect = val === w.word.toLowerCase();
+        document.getElementById('fillInput').classList.add(isCorrect ? 'correct' : 'wrong');
+        document.getElementById('fillInput').disabled = true;
+        if (isCorrect) score++;
+        results.push({ word: w, correct: isCorrect });
+        showFeedback(isCorrect, w.word);
+      }
+
+      function renderSpelling(w) {
+        document.getElementById('quizCard').innerHTML = `
+          <div class="quiz-type-badge">스펠링</div>
+          <div class="quiz-question">${escHtml(w.meaning)}</div>
+          <div class="quiz-ipa" style="margin-bottom:20px;">${escHtml(w.ipa || '')}</div>
+          <input type="text" class="fill-input" id="fillInput" placeholder="영어 단어를 입력하세요..." autocomplete="off" />
+          <div class="quiz-feedback" id="qFeedback"></div>
+          <div class="quiz-nav" style="margin-top:16px;">
+            <span class="quiz-score">🎯 ${score} / ${qIdx}</span>
+            <button class="btn btn--primary btn--sm" id="submitFill">확인</button>
+          </div>`;
+        const input = document.getElementById('fillInput');
+        input.focus();
+        document.getElementById('submitFill').addEventListener('click', () => checkFill(w));
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') checkFill(w); });
+      }
+
+      function renderFlashcard(w) {
+        answered = false;
+        document.getElementById('quizCard').innerHTML = `
+          <div class="quiz-type-badge">플래시카드 — 클릭하면 뒤집힙니다</div>
+          <div class="flashcard-wrap">
+            <div class="flashcard" id="flashcard">
+              <div class="flashcard__face">
+                <div class="flashcard__hint">단어</div>
+                <div class="flashcard__word">${escHtml(w.word)}</div>
+                <div style="font-size:0.82rem;color:var(--text-3);margin-top:8px;">${escHtml(w.ipa || '')}</div>
+              </div>
+              <div class="flashcard__face flashcard__back">
+                <div class="flashcard__hint">뜻</div>
+                <div class="flashcard__meaning">${escHtml(w.meaning)}</div>
+                <div class="flashcard__example">${escHtml(w.example || '')}</div>
+              </div>
+            </div>
+          </div>
+          <div class="flash-controls">
+            <button class="btn btn--ghost" id="flashWrong" style="border-color:#e55;color:#e55;">❌ 모르겠어요</button>
+            <button class="btn btn--ghost" id="flashCorrect" style="border-color:var(--success);color:var(--success);">✅ 알았어요</button>
+          </div>
+          <div class="quiz-nav">
+            <span class="quiz-score">🎯 ${score} / ${qIdx}</span>
+          </div>`;
+        document.getElementById('flashcard').addEventListener('click', () => {
+          document.getElementById('flashcard').classList.toggle('flipped');
+        });
+        document.getElementById('flashCorrect').addEventListener('click', () => {
+          if (answered) return; answered = true;
+          score++; results.push({ word: w, correct: true });
+          setTimeout(nextQuestion, 300);
+        });
+        document.getElementById('flashWrong').addEventListener('click', () => {
+          if (answered) return; answered = true;
+          results.push({ word: w, correct: false });
+          setTimeout(nextQuestion, 300);
+        });
+      }
+
+      function showFeedback(isCorrect, answer) {
+        const fb = document.getElementById('qFeedback');
+        fb.className = 'quiz-feedback show ' + (isCorrect ? 'correct' : 'wrong');
+        fb.textContent = isCorrect ? '✅ 정답입니다!' : `❌ 오답 — 정답: ${answer}`;
+        const nextBtn = document.getElementById('nextBtn');
+        if (nextBtn) { nextBtn.style.display = 'inline-flex'; nextBtn.addEventListener('click', nextQuestion); }
+        else setTimeout(nextQuestion, 2000);
+      }
+
+      function nextQuestion() {
+        qIdx++;
+        if (qIdx >= questions.length) { finishTest(); return; }
+        showQuestion();
+      }
+
+      function finishTest() {
+        /* Save results and navigate */
+        const testResults = { vocabId, type: selectedType, score, total: questions.length, results };
+        sessionStorage.setItem('testResults', JSON.stringify(testResults));
+        window.location.href = `test-result.html?vocabId=${vocabId || ''}`;
+      }
+
+      function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+
+      function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+      function escAttr(s) { return String(s).replace(/"/g,'&quot;'); }
+
+      loadVocab();
+    })();
+  </script>
+</body>
+</html>

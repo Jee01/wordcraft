@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>테스트 결과 — WordCraft AI</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .page-wrap { padding-top: 80px; min-height: 100vh; background: var(--bg); }
+    .result-wrap { padding: 48px 0 80px; }
+
+    /* Score circle */
+    .score-section { text-align: center; margin-bottom: 48px; }
+    .score-circle {
+      width: 160px; height: 160px; border-radius: 50%;
+      display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+      border: 6px solid var(--accent); margin-bottom: 20px;
+      background: var(--accent-dim);
+      position: relative;
+    }
+    .score-circle__pct { font-size: 2.4rem; font-weight: 900; color: var(--text); }
+    .score-circle__label { font-size: 0.78rem; color: var(--text-3); }
+    .score-grade { font-size: 1.4rem; font-weight: 800; margin-bottom: 6px; }
+    .score-sub { font-size: 0.9rem; color: var(--text-2); }
+
+    /* Stats row */
+    .stats-row { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 48px; }
+    .stat-box {
+      background: var(--bg-3); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 20px 28px; text-align: center; min-width: 120px;
+    }
+    .stat-box__num { font-size: 1.6rem; font-weight: 800; }
+    .stat-box__label { font-size: 0.78rem; color: var(--text-3); margin-top: 4px; }
+    .stat-box--correct .stat-box__num { color: var(--success); }
+    .stat-box--wrong .stat-box__num { color: #e55; }
+    .stat-box--skip .stat-box__num { color: var(--warn); }
+
+    /* Wrong words section */
+    .section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; }
+    .wrong-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 40px; }
+    .wrong-item {
+      background: var(--bg-3); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 18px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .wrong-item__icon { font-size: 1.1rem; flex-shrink: 0; }
+    .wrong-item__word { flex: 1; }
+    .wrong-item__word strong { font-size: 0.95rem; font-weight: 700; display: block; }
+    .wrong-item__word span { font-size: 0.8rem; color: var(--text-3); }
+    .wrong-item__meaning { font-size: 0.85rem; color: var(--accent-2); font-weight: 600; }
+
+    /* Action buttons */
+    .actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 48px; }
+
+    /* Correct list */
+    .correct-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+    @media (max-width: 700px) { .correct-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 440px) { .correct-grid { grid-template-columns: 1fr; } }
+    .correct-item {
+      background: var(--bg-3); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px;
+      display: flex; align-items: center; gap: 8px; font-size: 0.85rem;
+    }
+    .correct-item span { font-weight: 600; }
+    .correct-item small { color: var(--text-3); }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="index.html" class="nav__logo">🔤 WordCraft<span>AI</span></a>
+      <ul class="nav__links">
+        <li><a href="dashboard.html">대시보드</a></li>
+        <li><a href="vocab-new.html">단어장 만들기</a></li>
+        <li><a href="community.html">커뮤니티</a></li>
+      </ul>
+      <div class="nav__actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="테마 전환">
+          <span class="theme-toggle__icon theme-toggle__icon--dark">🌙</span>
+          <span class="theme-toggle__icon theme-toggle__icon--light">☀️</span>
+        </button>
+        <a href="settings.html" class="btn btn--ghost">⚙️ 설정</a>
+        <button class="btn btn--ghost" id="logoutBtn">로그아웃</button>
+      </div>
+      <button class="nav__hamburger" id="hamburger" aria-label="메뉴">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav__mobile" id="mobileMenu">
+      <a href="dashboard.html">대시보드</a>
+      <a href="vocab-new.html">단어장 만들기</a>
+      <a href="community.html">커뮤니티</a>
+      <a href="settings.html">설정</a>
+      <button class="btn btn--ghost" id="logoutBtnMobile">로그아웃</button>
+    </div>
+  </nav>
+
+  <div class="page-wrap">
+    <div class="result-wrap">
+      <div class="container" id="resultContainer">
+        <div style="text-align:center;padding:80px;color:var(--text-3);">결과를 불러오는 중...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+  <script>
+    (function () {
+      const token = localStorage.getItem('accessToken');
+      if (!token) { window.location.href = 'login.html'; return; }
+
+      const html = document.documentElement;
+      const toggle = document.getElementById('themeToggle');
+      if (localStorage.getItem('wc-theme') === 'light') html.classList.add('light');
+      toggle.addEventListener('click', () => {
+        html.classList.toggle('light');
+        localStorage.setItem('wc-theme', html.classList.contains('light') ? 'light' : 'dark');
+      });
+
+      function logout() { localStorage.removeItem('accessToken'); localStorage.removeItem('refreshToken'); window.location.href = 'login.html'; }
+      document.getElementById('logoutBtn').addEventListener('click', logout);
+      document.getElementById('logoutBtnMobile').addEventListener('click', logout);
+
+      const params = new URLSearchParams(window.location.search);
+      const vocabId = params.get('vocabId');
+
+      /* Load results from sessionStorage */
+      let testResults = null;
+      const raw = sessionStorage.getItem('testResults');
+      if (raw) {
+        try { testResults = JSON.parse(raw); } catch { /* ignore */ }
+      }
+
+      /* Fallback sample data */
+      if (!testResults) {
+        testResults = {
+          vocabId, type: 'meaning', score: 3, total: 5,
+          results: [
+            { word: { word: 'implement', meaning: '시행하다 · 실행하다', ipa: '/ˈɪmplɪmənt/' }, correct: true },
+            { word: { word: 'significant', meaning: '중요한 · 상당한', ipa: '/sɪɡˈnɪfɪkənt/' }, correct: true },
+            { word: { word: 'constitute', meaning: '구성하다 · ~에 해당하다', ipa: '/ˈkɒnstɪtjuːt/' }, correct: false },
+            { word: { word: 'elaborate', meaning: '정교한 · 자세히 설명하다', ipa: '/ɪˈlæbərət/' }, correct: true },
+            { word: { word: 'paradigm', meaning: '패러다임 · 전형적인 예', ipa: '/ˈpærədaɪm/' }, correct: false },
+          ]
+        };
+      }
+
+      /* Save test history to server */
+      async function saveHistory() {
+        try {
+          await fetch('/api/test/history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            body: JSON.stringify({
+              vocabId: testResults.vocabId,
+              testType: testResults.type,
+              score: testResults.score,
+              total: testResults.total,
+            }),
+          });
+        } catch { /* ignore */ }
+      }
+
+      function render() {
+        const { score, total, results, type } = testResults;
+        const pct = total > 0 ? Math.round(score / total * 100) : 0;
+        const wrong = results.filter(r => !r.correct && !r.skipped);
+        const skipped = results.filter(r => r.skipped);
+        const correct = results.filter(r => r.correct);
+
+        let grade, gradeColor;
+        if (pct >= 90) { grade = '🏆 최우수'; gradeColor = 'var(--success)'; }
+        else if (pct >= 70) { grade = '⭐ 우수'; gradeColor = 'var(--accent-2)'; }
+        else if (pct >= 50) { grade = '👍 보통'; gradeColor = 'var(--warn)'; }
+        else { grade = '💪 분발'; gradeColor = '#e55'; }
+
+        const typeLabel = { meaning: '뜻 맞추기', fill: '빈칸 채우기', flashcard: '플래시카드', spelling: '스펠링', word2meaning: '단어↔뜻 연결' }[type] || type;
+
+        document.getElementById('resultContainer').innerHTML = `
+          <!-- Score -->
+          <div class="score-section">
+            <div class="score-circle" style="border-color:${gradeColor}; background: ${gradeColor}22;">
+              <div class="score-circle__pct">${pct}%</div>
+              <div class="score-circle__label">${score} / ${total}</div>
+            </div>
+            <div class="score-grade" style="color:${gradeColor}">${grade}</div>
+            <div class="score-sub">${typeLabel} 테스트 완료</div>
+          </div>
+
+          <!-- Stats row -->
+          <div class="stats-row">
+            <div class="stat-box stat-box--correct">
+              <div class="stat-box__num">✅ ${correct.length}</div>
+              <div class="stat-box__label">정답</div>
+            </div>
+            <div class="stat-box stat-box--wrong">
+              <div class="stat-box__num">❌ ${wrong.length}</div>
+              <div class="stat-box__label">오답</div>
+            </div>
+            <div class="stat-box stat-box--skip">
+              <div class="stat-box__num">⏭️ ${skipped.length}</div>
+              <div class="stat-box__label">건너뜀</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-box__num">${pct}%</div>
+              <div class="stat-box__label">정답률</div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="actions">
+            <a href="test.html${vocabId ? '?vocabId=' + vocabId : ''}" class="btn btn--primary btn--lg">🔄 다시 테스트</a>
+            ${vocabId ? `<a href="vocab.html?id=${vocabId}" class="btn btn--ghost btn--lg">📚 단어장 보기</a>` : ''}
+            <a href="dashboard.html" class="btn btn--ghost btn--lg">🏠 대시보드</a>
+          </div>
+
+          <!-- Wrong words -->
+          ${wrong.length > 0 ? `
+          <div class="section-title">❌ 오답 단어 (${wrong.length}개)</div>
+          <div class="wrong-list">
+            ${wrong.map(r => `
+              <div class="wrong-item">
+                <div class="wrong-item__icon">❌</div>
+                <div class="wrong-item__word">
+                  <strong>${escHtml(r.word.word)}</strong>
+                  <span>${escHtml(r.word.ipa || '')}</span>
+                </div>
+                <div class="wrong-item__meaning">${escHtml(r.word.meaning)}</div>
+              </div>`).join('')}
+          </div>` : ''}
+
+          <!-- Correct words -->
+          ${correct.length > 0 ? `
+          <div class="section-title">✅ 맞힌 단어 (${correct.length}개)</div>
+          <div class="correct-grid">
+            ${correct.map(r => `
+              <div class="correct-item">
+                <span>✅</span>
+                <div>
+                  <span>${escHtml(r.word.word)}</span><br/>
+                  <small>${escHtml(r.word.meaning)}</small>
+                </div>
+              </div>`).join('')}
+          </div>` : ''}
+        `;
+
+        /* Reveal animation */
+        setTimeout(() => {
+          document.querySelectorAll('.stat-box, .wrong-item, .correct-item').forEach((el, i) => {
+            el.classList.add('reveal');
+            el.style.transitionDelay = `${i * 40}ms`;
+            const obs = new IntersectionObserver(entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }), { threshold: 0.05 });
+            obs.observe(el);
+          });
+        }, 50);
+      }
+
+      function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+      render();
+      saveHistory();
+    })();
+  </script>
+</body>
+</html>

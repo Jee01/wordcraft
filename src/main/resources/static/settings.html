@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>설정 — WordCraft AI</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .page-wrap { padding-top: 80px; min-height: 100vh; background: var(--bg); }
+    .page-header { background: var(--bg-2); border-bottom: 1px solid var(--border); padding: 28px 0; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+    .page-header p { color: var(--text-2); font-size: 0.9rem; }
+
+    .settings-wrap { padding: 40px 0 80px; }
+    .settings-grid { display: grid; grid-template-columns: 220px 1fr; gap: 28px; }
+    @media (max-width: 720px) { .settings-grid { grid-template-columns: 1fr; } }
+
+    /* Sidebar nav */
+    .settings-nav { position: sticky; top: 88px; height: fit-content; }
+    .settings-nav__item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: var(--radius);
+      font-size: 0.9rem; font-weight: 600; color: var(--text-2);
+      cursor: pointer; transition: background .15s, color .15s;
+      border: none; background: none; width: 100%; text-align: left;
+    }
+    .settings-nav__item:hover { background: var(--bg-3); color: var(--text); }
+    .settings-nav__item.active { background: var(--accent-dim); color: var(--accent-2); }
+
+    /* Settings sections */
+    .settings-section { display: none; }
+    .settings-section.active { display: block; }
+
+    .section-card {
+      background: var(--bg-3); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 28px; margin-bottom: 18px;
+    }
+    .section-card__title { font-size: 1rem; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+    .section-card__desc { font-size: 0.82rem; color: var(--text-3); margin-bottom: 18px; }
+
+    /* Form elements */
+    .form-group { margin-bottom: 18px; }
+    .form-group:last-child { margin-bottom: 0; }
+    .form-label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+    .form-input {
+      width: 100%; background: var(--bg-4); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px;
+      color: var(--text); font-size: 0.9rem; font-family: var(--font);
+      transition: border-color .2s; outline: none;
+    }
+    .form-input:focus { border-color: var(--accent); }
+    .form-hint { font-size: 0.75rem; color: var(--text-3); margin-top: 5px; }
+
+    /* API key row */
+    .key-row { display: flex; gap: 8px; align-items: center; }
+    .key-row .form-input { flex: 1; font-family: monospace; letter-spacing: .05em; }
+    .key-toggle { background: none; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 10px 12px; cursor: pointer; color: var(--text-3); transition: border-color .2s; white-space: nowrap; }
+    .key-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Status indicator */
+    .key-status { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; margin-top: 5px; }
+    .key-status--ok { color: var(--success); }
+    .key-status--empty { color: var(--text-3); }
+    .key-status--error { color: #e55; }
+
+    /* Save / action buttons */
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+
+    /* Alert */
+    .alert {
+      display: none; padding: 10px 14px; border-radius: var(--radius);
+      font-size: 0.85rem; margin-top: 12px;
+    }
+    .alert.show { display: block; }
+    .alert--success { background: rgba(62,207,142,.12); border: 1px solid rgba(62,207,142,.4); color: var(--success); }
+    .alert--error { background: rgba(255,80,80,.12); border: 1px solid rgba(255,80,80,.4); color: #ff8080; }
+
+    /* Toggle switch */
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-row__label { font-size: 0.9rem; font-weight: 600; }
+    .toggle-row__desc { font-size: 0.78rem; color: var(--text-3); margin-top: 2px; }
+    .toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0; cursor: pointer;
+      background: var(--bg-4); border: 1.5px solid var(--border);
+      border-radius: 100px; transition: .2s;
+    }
+    .toggle-slider::before {
+      content:''; position: absolute; width: 16px; height: 16px;
+      left: 3px; bottom: 2px; background: var(--text-3);
+      border-radius: 50%; transition: .2s;
+    }
+    input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
+    input:checked + .toggle-slider::before { transform: translateX(20px); background: #fff; }
+
+    /* Danger zone */
+    .danger-zone { border-color: rgba(229,85,85,.4); }
+    .danger-zone .section-card__title { color: #e55; }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="index.html" class="nav__logo">🔤 WordCraft<span>AI</span></a>
+      <ul class="nav__links">
+        <li><a href="dashboard.html">대시보드</a></li>
+        <li><a href="vocab-new.html">단어장 만들기</a></li>
+        <li><a href="community.html">커뮤니티</a></li>
+      </ul>
+      <div class="nav__actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="테마 전환">
+          <span class="theme-toggle__icon theme-toggle__icon--dark">🌙</span>
+          <span class="theme-toggle__icon theme-toggle__icon--light">☀️</span>
+        </button>
+        <a href="settings.html" class="btn btn--ghost" style="color:var(--accent)">⚙️ 설정</a>
+        <button class="btn btn--ghost" id="logoutBtn">로그아웃</button>
+      </div>
+      <button class="nav__hamburger" id="hamburger" aria-label="메뉴">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav__mobile" id="mobileMenu">
+      <a href="dashboard.html">대시보드</a>
+      <a href="vocab-new.html">단어장 만들기</a>
+      <a href="community.html">커뮤니티</a>
+      <a href="settings.html">설정</a>
+      <button class="btn btn--ghost" id="logoutBtnMobile">로그아웃</button>
+    </div>
+  </nav>
+
+  <div class="page-wrap">
+    <div class="page-header">
+      <div class="container">
+        <h1>⚙️ 설정</h1>
+        <p>프로필, AI API Key, 학습 환경을 관리합니다.</p>
+      </div>
+    </div>
+
+    <div class="settings-wrap">
+      <div class="container">
+        <div class="settings-grid">
+
+          <!-- Sidebar -->
+          <nav class="settings-nav">
+            <button class="settings-nav__item active" data-section="profile">👤 프로필</button>
+            <button class="settings-nav__item" data-section="ai-keys">🔑 AI API Key</button>
+            <button class="settings-nav__item" data-section="learning">📚 학습 설정</button>
+            <button class="settings-nav__item" data-section="account">🔐 계정 보안</button>
+            <button class="settings-nav__item" data-section="danger">⚠️ 위험 구역</button>
+          </nav>
+
+          <!-- Content -->
+          <div>
+
+            <!-- Profile section -->
+            <div class="settings-section active" id="section-profile">
+              <div class="section-card">
+                <div class="section-card__title">👤 프로필 정보</div>
+                <div class="form-group">
+                  <label class="form-label">닉네임</label>
+                  <input type="text" class="form-input" id="nickname" placeholder="닉네임" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">이메일</label>
+                  <input type="email" class="form-input" id="email" placeholder="이메일" readonly style="opacity:.6;cursor:not-allowed;" />
+                  <div class="form-hint">이메일은 변경할 수 없습니다.</div>
+                </div>
+                <div class="btn-row">
+                  <button class="btn btn--primary" id="saveProfileBtn">저장하기</button>
+                </div>
+                <div class="alert" id="profileAlert"></div>
+              </div>
+            </div>
+
+            <!-- AI Keys section -->
+            <div class="settings-section" id="section-ai-keys">
+              <div class="section-card">
+                <div class="section-card__title">🔑 AI API Key 관리</div>
+                <div class="section-card__desc">
+                  API Key는 브라우저 localStorage에만 저장됩니다. 서버는 절대 보관하지 않으며, 요청 시 중계 용도로만 사용됩니다.
+                </div>
+
+                <!-- Anthropic -->
+                <div class="form-group">
+                  <label class="form-label">Anthropic (Claude)</label>
+                  <div class="key-row">
+                    <input type="password" class="form-input" id="key-anthropic" placeholder="sk-ant-..." />
+                    <button class="key-toggle" data-target="key-anthropic">👁️</button>
+                  </div>
+                  <div class="key-status" id="status-anthropic">
+                    <span>●</span><span>미설정</span>
+                  </div>
+                </div>
+
+                <!-- OpenAI -->
+                <div class="form-group">
+                  <label class="form-label">OpenAI (GPT)</label>
+                  <div class="key-row">
+                    <input type="password" class="form-input" id="key-openai" placeholder="sk-..." />
+                    <button class="key-toggle" data-target="key-openai">👁️</button>
+                  </div>
+                  <div class="key-status" id="status-openai">
+                    <span>●</span><span>미설정</span>
+                  </div>
+                </div>
+
+                <!-- Google -->
+                <div class="form-group">
+                  <label class="form-label">Google (Gemini)</label>
+                  <div class="key-row">
+                    <input type="password" class="form-input" id="key-google" placeholder="AIza..." />
+                    <button class="key-toggle" data-target="key-google">👁️</button>
+                  </div>
+                  <div class="key-status" id="status-google">
+                    <span>●</span><span>미설정</span>
+                  </div>
+                </div>
+
+                <div class="btn-row">
+                  <button class="btn btn--primary" id="saveKeysBtn">API Key 저장</button>
+                  <button class="btn btn--ghost" id="clearKeysBtn" style="border-color:#e55;color:#e55;">모두 삭제</button>
+                </div>
+                <div class="alert" id="keysAlert"></div>
+              </div>
+            </div>
+
+            <!-- Learning section -->
+            <div class="settings-section" id="section-learning">
+              <div class="section-card">
+                <div class="section-card__title">📚 학습 설정</div>
+
+                <div class="toggle-row">
+                  <div>
+                    <div class="toggle-row__label">다크 모드</div>
+                    <div class="toggle-row__desc">어두운 테마를 사용합니다.</div>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="darkModeToggle" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div class="toggle-row">
+                  <div>
+                    <div class="toggle-row__label">학습 시 발음기호 표시</div>
+                    <div class="toggle-row__desc">단어 카드에 IPA 발음기호를 함께 표시합니다.</div>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="showIpaToggle" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div class="toggle-row">
+                  <div>
+                    <div class="toggle-row__label">학습 시 기억팁 표시</div>
+                    <div class="toggle-row__desc">AI가 생성한 어원·기억팁을 함께 표시합니다.</div>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="showTipToggle" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div class="toggle-row">
+                  <div>
+                    <div class="toggle-row__label">테스트 후 틀린 단어 다시 출제</div>
+                    <div class="toggle-row__desc">오답 단어를 테스트 마지막에 다시 한번 출제합니다.</div>
+                  </div>
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="retryWrongToggle" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div class="form-group" style="margin-top:20px;">
+                  <label class="form-label">기본 테스트 유형</label>
+                  <select class="form-input" id="defaultTestType" style="cursor:pointer;">
+                    <option value="meaning">뜻 맞추기</option>
+                    <option value="fill">빈칸 채우기</option>
+                    <option value="flashcard">플래시카드</option>
+                    <option value="spelling">스펠링</option>
+                  </select>
+                </div>
+
+                <div class="btn-row">
+                  <button class="btn btn--primary" id="saveLearningBtn">저장하기</button>
+                </div>
+                <div class="alert" id="learningAlert"></div>
+              </div>
+            </div>
+
+            <!-- Account security section -->
+            <div class="settings-section" id="section-account">
+              <div class="section-card">
+                <div class="section-card__title">🔐 비밀번호 변경</div>
+                <div class="form-group">
+                  <label class="form-label">현재 비밀번호</label>
+                  <input type="password" class="form-input" id="currentPw" placeholder="현재 비밀번호" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">새 비밀번호</label>
+                  <input type="password" class="form-input" id="newPw" placeholder="새 비밀번호 (8자 이상)" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">새 비밀번호 확인</label>
+                  <input type="password" class="form-input" id="newPwConfirm" placeholder="새 비밀번호 다시 입력" />
+                </div>
+                <div class="btn-row">
+                  <button class="btn btn--primary" id="changePwBtn">비밀번호 변경</button>
+                </div>
+                <div class="alert" id="pwAlert"></div>
+              </div>
+            </div>
+
+            <!-- Danger zone section -->
+            <div class="settings-section" id="section-danger">
+              <div class="section-card danger-zone">
+                <div class="section-card__title">⚠️ 위험 구역</div>
+                <div class="section-card__desc">아래 작업은 되돌릴 수 없습니다. 신중하게 진행하세요.</div>
+
+                <div class="toggle-row">
+                  <div>
+                    <div class="toggle-row__label">모든 단어장 삭제</div>
+                    <div class="toggle-row__desc">내가 만든 모든 단어장과 단어 데이터가 삭제됩니다.</div>
+                  </div>
+                  <button class="btn btn--ghost btn--sm" id="deleteAllVocabsBtn" style="border-color:#e55;color:#e55;">삭제</button>
+                </div>
+
+                <div class="toggle-row">
+                  <div>
+                    <div class="toggle-row__label">계정 탈퇴</div>
+                    <div class="toggle-row__desc">계정과 모든 데이터가 영구적으로 삭제됩니다.</div>
+                  </div>
+                  <button class="btn btn--ghost btn--sm" id="deleteAccountBtn" style="border-color:#e55;color:#e55;">탈퇴</button>
+                </div>
+
+                <div class="alert" id="dangerAlert"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+  <script>
+    (function () {
+      const token = localStorage.getItem('accessToken');
+      if (!token) { window.location.href = 'login.html'; return; }
+
+      /* Theme */
+      const html = document.documentElement;
+      const themeBtn = document.getElementById('themeToggle');
+      const isDark = localStorage.getItem('wc-theme') !== 'light';
+      if (!isDark) html.classList.add('light');
+      themeBtn.addEventListener('click', () => {
+        html.classList.toggle('light');
+        const light = html.classList.contains('light');
+        localStorage.setItem('wc-theme', light ? 'light' : 'dark');
+        document.getElementById('darkModeToggle').checked = !light;
+      });
+
+      function logout() { localStorage.removeItem('accessToken'); localStorage.removeItem('refreshToken'); window.location.href = 'login.html'; }
+      document.getElementById('logoutBtn').addEventListener('click', logout);
+      document.getElementById('logoutBtnMobile').addEventListener('click', logout);
+
+      /* Section navigation */
+      document.querySelectorAll('.settings-nav__item').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.settings-nav__item').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById('section-' + btn.dataset.section).classList.add('active');
+        });
+      });
+
+      /* Load profile */
+      async function loadProfile() {
+        try {
+          const res = await fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + token } });
+          if (res.status === 401) { logout(); return; }
+          const user = await res.json();
+          document.getElementById('nickname').value = user.nickname || '';
+          document.getElementById('email').value = user.email || '';
+        } catch { /* ignore */ }
+      }
+
+      /* Save profile */
+      document.getElementById('saveProfileBtn').addEventListener('click', async () => {
+        const nickname = document.getElementById('nickname').value.trim();
+        if (!nickname) { showAlert('profileAlert', 'error', '닉네임을 입력해주세요.'); return; }
+        try {
+          const res = await fetch('/api/auth/me', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            body: JSON.stringify({ nickname }),
+          });
+          if (!res.ok) throw new Error();
+          showAlert('profileAlert', 'success', '✅ 프로필이 저장되었습니다.');
+        } catch {
+          showAlert('profileAlert', 'error', '저장에 실패했습니다. 다시 시도해주세요.');
+        }
+      });
+
+      /* API Keys */
+      const KEY_MAP = { anthropic: 'wc-key-anthropic', openai: 'wc-key-openai', google: 'wc-key-google' };
+
+      function loadKeys() {
+        Object.entries(KEY_MAP).forEach(([provider, storageKey]) => {
+          const val = localStorage.getItem(storageKey);
+          const input = document.getElementById('key-' + provider);
+          const status = document.getElementById('status-' + provider);
+          if (val) {
+            input.value = val;
+            status.className = 'key-status key-status--ok';
+            status.innerHTML = '<span>●</span><span>설정됨</span>';
+          } else {
+            status.className = 'key-status key-status--empty';
+            status.innerHTML = '<span>●</span><span>미설정</span>';
+          }
+        });
+      }
+
+      /* Toggle key visibility */
+      document.querySelectorAll('.key-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const input = document.getElementById(btn.dataset.target);
+          input.type = input.type === 'password' ? 'text' : 'password';
+          btn.textContent = input.type === 'password' ? '👁️' : '🙈';
+        });
+      });
+
+      document.getElementById('saveKeysBtn').addEventListener('click', () => {
+        Object.entries(KEY_MAP).forEach(([provider, storageKey]) => {
+          const val = document.getElementById('key-' + provider).value.trim();
+          if (val) localStorage.setItem(storageKey, val);
+          else localStorage.removeItem(storageKey);
+        });
+        loadKeys();
+        showAlert('keysAlert', 'success', '✅ API Key가 브라우저에 저장되었습니다.');
+      });
+
+      document.getElementById('clearKeysBtn').addEventListener('click', () => {
+        if (!confirm('모든 API Key를 삭제하시겠습니까?')) return;
+        Object.values(KEY_MAP).forEach(k => localStorage.removeItem(k));
+        Object.keys(KEY_MAP).forEach(p => { document.getElementById('key-' + p).value = ''; });
+        loadKeys();
+        showAlert('keysAlert', 'success', '✅ 모든 API Key가 삭제되었습니다.');
+      });
+
+      /* Learning preferences */
+      function loadLearningPrefs() {
+        const prefs = JSON.parse(localStorage.getItem('wc-prefs') || '{}');
+        document.getElementById('darkModeToggle').checked = localStorage.getItem('wc-theme') !== 'light';
+        document.getElementById('showIpaToggle').checked = prefs.showIpa !== false;
+        document.getElementById('showTipToggle').checked = prefs.showTip !== false;
+        document.getElementById('retryWrongToggle').checked = prefs.retryWrong !== false;
+        if (prefs.defaultTestType) document.getElementById('defaultTestType').value = prefs.defaultTestType;
+      }
+
+      document.getElementById('darkModeToggle').addEventListener('change', e => {
+        html.classList.toggle('light', !e.target.checked);
+        localStorage.setItem('wc-theme', e.target.checked ? 'dark' : 'light');
+      });
+
+      document.getElementById('saveLearningBtn').addEventListener('click', () => {
+        const prefs = {
+          showIpa: document.getElementById('showIpaToggle').checked,
+          showTip: document.getElementById('showTipToggle').checked,
+          retryWrong: document.getElementById('retryWrongToggle').checked,
+          defaultTestType: document.getElementById('defaultTestType').value,
+        };
+        localStorage.setItem('wc-prefs', JSON.stringify(prefs));
+        showAlert('learningAlert', 'success', '✅ 학습 설정이 저장되었습니다.');
+      });
+
+      /* Password change */
+      document.getElementById('changePwBtn').addEventListener('click', async () => {
+        const current = document.getElementById('currentPw').value;
+        const next = document.getElementById('newPw').value;
+        const confirm = document.getElementById('newPwConfirm').value;
+        if (!current || !next) { showAlert('pwAlert', 'error', '모든 항목을 입력해주세요.'); return; }
+        if (next.length < 8) { showAlert('pwAlert', 'error', '새 비밀번호는 8자 이상이어야 합니다.'); return; }
+        if (next !== confirm) { showAlert('pwAlert', 'error', '새 비밀번호가 일치하지 않습니다.'); return; }
+        try {
+          const res = await fetch('/api/auth/password', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            body: JSON.stringify({ currentPassword: current, newPassword: next }),
+          });
+          if (!res.ok) { const d = await res.json(); throw new Error(d.message || '변경 실패'); }
+          showAlert('pwAlert', 'success', '✅ 비밀번호가 변경되었습니다.');
+          document.getElementById('currentPw').value = '';
+          document.getElementById('newPw').value = '';
+          document.getElementById('newPwConfirm').value = '';
+        } catch (err) {
+          showAlert('pwAlert', 'error', err.message || '현재 비밀번호가 올바르지 않습니다.');
+        }
+      });
+
+      /* Danger zone */
+      document.getElementById('deleteAllVocabsBtn').addEventListener('click', async () => {
+        if (!confirm('정말로 모든 단어장을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+        try {
+          await fetch('/api/vocab/all', { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
+          showAlert('dangerAlert', 'success', '✅ 모든 단어장이 삭제되었습니다.');
+        } catch {
+          showAlert('dangerAlert', 'error', '삭제에 실패했습니다.');
+        }
+      });
+
+      document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
+        const confirmed = prompt('계정을 탈퇴하려면 "탈퇴합니다"를 입력하세요:');
+        if (confirmed !== '탈퇴합니다') return;
+        try {
+          await fetch('/api/auth/me', { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
+          logout();
+        } catch {
+          showAlert('dangerAlert', 'error', '계정 탈퇴에 실패했습니다.');
+        }
+      });
+
+      function showAlert(id, type, msg) {
+        const el = document.getElementById(id);
+        el.className = `alert show alert--${type}`;
+        el.textContent = msg;
+        setTimeout(() => el.classList.remove('show'), 4000);
+      }
+
+      loadProfile();
+      loadKeys();
+      loadLearningPrefs();
+    })();
+  </script>
+</body>
+</html>
