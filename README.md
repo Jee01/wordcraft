@@ -184,6 +184,7 @@ AI 요청 시 요청 헤더에 포함 (HTTPS 암호화)
 ---
 
 ## ⚙️ ERD
+<img width="1313" height="1360" alt="Image" src="https://github.com/user-attachments/assets/0f47c16a-e2d2-4bf5-b75c-114ade65deba" />
 
 ## 📋 개발 현황
 
