@@ -366,6 +366,77 @@ Body: { title, description, isPublic, tags[], words[{ word, meaning, pos, ipa, e
 
 ---
 
+---
+
+## 단어장 만들기 페이지 통합 (2026-06-12)
+
+### 변경 파일
+
+| 파일 | 변경 내용 |
+|---|---|
+| `vocab-new.html` | AI 생성 + 직접 입력 두 모드를 한 페이지로 통합 |
+| `FrontEnd/vocab-new.html` | 동일 내용의 디자인 미리보기 전용 버전 갱신 |
+| `manual-vocab-add.html` | `vocab-new.html`로 기능 흡수 — 단독 페이지로서 역할 종료 |
+
+### 기능 개요
+
+페이지 상단 헤더에 **모드 토글 버튼**을 추가하여 한 페이지에서 두 가지 입력 방식을 전환.
+
+```
+✨ AI 자동 생성  |  ✍️ 직접 입력
+```
+
+**공통 섹션** (항상 표시):
+- 기본 정보 (제목·설명·공개 여부)
+- 학습 태그 선택
+
+**AI 모드 전용 섹션** (직접 입력 시 `display:none`):
+- 단어 텍스트 입력 (textarea, 줄 단위)
+- AI 모델 선택 (Anthropic · OpenAI · Google)
+- 사이드바: AI 생성 버튼 + 단어 미리보기
+
+**직접 입력 모드 전용 섹션** (AI 모드 시 `display:none`):
+- 단어 항목 동적 추가/삭제/순서변경 (단어·뜻·품사·발음기호·예문·메모)
+- 사이드바: 저장 버튼 + 완성 단어 수 + 미리보기
+
+### POST 요청 분리
+
+| 모드 | 엔드포인트 | 주요 바디 |
+|---|---|---|
+| AI 생성 | `POST /api/vocab/generate` | `{ title, description, isPublic, tags[], words[], aiProvider, apiKey }` |
+| 직접 입력 | `POST /api/vocab` | `{ title, tag (문자열, 콤마 join), isPublic, words[{ word, meaning, pos, ipa, examples, memoryTip }] }` |
+
+> **주의:** 직접 입력 모드의 `tag`는 배열이 아닌 **단일 문자열** (`[...selectedTags].join(',')`) — 백엔드 `VocaCreateRequestDTO.tag (String, @NotBlank)` 스펙에 맞춤. 태그 미선택 시 프론트에서 오류 처리.
+
+> **주의:** 직접 입력 모드 단어 필드명 — `examples` (백엔드 `VocaWordRequestDTO.examples`), `memoryTip` (백엔드 `VocaWordRequestDTO.memoryTip`). HTML 입력 필드 `data-field`는 내부적으로 `example` / `memo`를 쓰고, payload 생성 시 변환.
+
+### 성공 후 이동
+
+| 모드 | 이동 대상 |
+|---|---|
+| AI 생성 | `vocab.html?id={data.id}` |
+| 직접 입력 | `dashboard.html` (백엔드 응답에 id 없음) |
+
+---
+
+## index.html 로그인 상태 네브 전환 (2026-06-12)
+
+### 변경 내용
+
+로그인 여부(`localStorage.accessToken` 존재 확인)에 따라 네브바 버튼을 동적으로 교체.
+
+| 상태 | 데스크탑 네브 | 모바일 메뉴 | Hero CTA |
+|---|---|---|---|
+| 비로그인 | 로그인 + 시작하기 | 로그인 + 시작하기 | 무료로 시작하기 (`#/register`) |
+| 로그인 | 대시보드 + 로그아웃 | 대시보드 + 로그아웃 | 대시보드로 이동 (`dashboard.html`) |
+
+**구현 방식:**
+- 비로그인 버튼과 로그인 버튼을 HTML에 모두 선언, 기본값은 로그인 버튼 그룹만 표시
+- JS에서 토큰 확인 후 `display:none` / `display:''` 토글
+- 로그아웃 클릭 시 `accessToken` · `refreshToken` 삭제 후 `location.reload()`
+
+---
+
 ### CSS 레이어 계층 규칙 (다크모드 입력 필드 가시성)
 
 다크모드 배경 변수 밝기 순서: `--bg` < `--bg-2` < `--bg-3` < `--bg-4` (bg-4가 가장 밝음)

@@ -4,7 +4,10 @@ import com.example.wordcraft.DTO.VocaCreateRequestDTO;
 import com.example.wordcraft.DTO.VocaResponseDTO;
 import com.example.wordcraft.Service.VocaService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,10 +20,15 @@ public class VocaController {
 
     public VocaController(VocaService vocaService) {this.vocaService = vocaService;}
 
-    @PostMapping //반환 타입 이후 변경
-    public ResponseEntity<VocaResponseDTO> createVoca(@Valid @RequestBody VocaCreateRequestDTO vocaCreateRequestDTO) {
+    @PostMapping
+    public ResponseEntity<Map<String, String>> createVoca(@Valid @RequestBody VocaCreateRequestDTO vocaCreateRequestDTO
+    ,@AuthenticationPrincipal UserDetails userDetails) {
+        String email = userDetails.getUsername();
+        vocaService.createVocabularies(vocaCreateRequestDTO, email);
 
-        return null;
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(Map.of("message", "success createVocabularies"));
     }
     @GetMapping
     public ResponseEntity<List<VocaResponseDTO>> getVocaList() {

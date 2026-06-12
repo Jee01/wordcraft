@@ -1,6 +1,7 @@
 package com.example.wordcraft.DTO;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,7 +14,7 @@ public class VocaCreateRequestDTO {
     private String title;
     @NotBlank(message = "tag")
     private String tag;
-    @NotBlank(message = "isPublic")
+    @NotNull(message = "isPublic")
     private Boolean isPublic;
     private List<VocaWordRequestDTO> words;
 }

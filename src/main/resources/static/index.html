@@ -22,8 +22,12 @@
           <span class="theme-toggle__icon theme-toggle__icon--dark">🌙</span>
           <span class="theme-toggle__icon theme-toggle__icon--light">☀️</span>
         </button>
-        <a href="#/login" class="btn btn--ghost">로그인</a>
-        <a href="#/register" class="btn btn--primary">시작하기</a>
+        <!-- 비로그인 -->
+        <a href="#/login" class="btn btn--ghost" id="navLogin">로그인</a>
+        <a href="#/register" class="btn btn--primary" id="navRegister">시작하기</a>
+        <!-- 로그인 상태 (기본 hidden) -->
+        <a href="dashboard.html" class="btn btn--ghost" id="navDashboard" style="display:none;">대시보드</a>
+        <button class="btn btn--ghost" id="navLogout" style="display:none;">로그아웃</button>
       </div>
       <button class="nav__hamburger" id="hamburger" aria-label="메뉴">
         <span></span><span></span><span></span>
@@ -33,8 +37,12 @@
       <a href="#features">기능</a>
       <a href="#how">사용법</a>
       <a href="#community">커뮤니티</a>
-      <a href="#/login" class="btn btn--ghost">로그인</a>
-      <a href="#/register" class="btn btn--primary">시작하기</a>
+      <!-- 비로그인 -->
+      <a href="#/login" class="btn btn--ghost" id="mobileNavLogin">로그인</a>
+      <a href="#/register" class="btn btn--primary" id="mobileNavRegister">시작하기</a>
+      <!-- 로그인 상태 (기본 hidden) -->
+      <a href="dashboard.html" class="btn btn--ghost" id="mobileNavDashboard" style="display:none;">대시보드</a>
+      <button class="btn btn--ghost" id="mobileNavLogout" style="display:none;">로그아웃</button>
     </div>
   </nav>
 
@@ -332,19 +340,50 @@
 
   <script src="main.js"></script>
   <script>
-    /* ===== THEME TOGGLE (inline — path-safe) ===== */
-    (function () {
-      const html   = document.documentElement;
-      const toggle = document.getElementById('themeToggle');
-      if (!toggle) return;
-
+  (function () {
+    /* ── 테마 ── */
+    const html   = document.documentElement;
+    const toggle = document.getElementById('themeToggle');
+    if (toggle) {
       if (localStorage.getItem('wc-theme') === 'light') html.classList.add('light');
-
       toggle.addEventListener('click', () => {
         html.classList.toggle('light');
         localStorage.setItem('wc-theme', html.classList.contains('light') ? 'light' : 'dark');
       });
-    })();
+    }
+
+    /* ── 로그인 상태에 따른 네브 전환 ── */
+    const token = localStorage.getItem('accessToken');
+
+    if (token) {
+      /* 로그인 상태: 로그인/시작하기 숨기고 대시보드/로그아웃 표시 */
+      document.getElementById('navLogin').style.display       = 'none';
+      document.getElementById('navRegister').style.display    = 'none';
+      document.getElementById('navDashboard').style.display   = '';
+      document.getElementById('navLogout').style.display      = '';
+
+      document.getElementById('mobileNavLogin').style.display     = 'none';
+      document.getElementById('mobileNavRegister').style.display  = 'none';
+      document.getElementById('mobileNavDashboard').style.display = '';
+      document.getElementById('mobileNavLogout').style.display    = '';
+
+      /* Hero CTA 버튼 → 대시보드로 변경 */
+      const heroCta = document.querySelector('.hero__cta a.btn--primary');
+      if (heroCta) {
+        heroCta.textContent = '대시보드로 이동';
+        heroCta.href = 'dashboard.html';
+      }
+    }
+
+    /* ── 로그아웃 ── */
+    function logout() {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      window.location.reload();
+    }
+    document.getElementById('navLogout').addEventListener('click', logout);
+    document.getElementById('mobileNavLogout').addEventListener('click', logout);
+  })();
   </script>
 </body>
 </html>

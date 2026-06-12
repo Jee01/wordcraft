@@ -528,6 +528,8 @@
       const title = document.getElementById('vocabTitle').value.trim();
       if (!title) { showErr('단어장 제목을 입력해주세요.'); document.getElementById('vocabTitle').focus(); return; }
 
+      if (selectedTags.size === 0) { showErr('학습 태그를 하나 이상 선택해주세요.'); return; }
+
       const readyEntries = entries.filter(isReady);
       if (readyEntries.length === 0) { showErr('단어와 뜻이 모두 입력된 항목이 하나 이상 있어야 합니다.'); return; }
 
@@ -541,16 +543,15 @@
 
       const payload = {
         title,
-        description: document.getElementById('vocabDesc').value.trim(),
+        tag: [...selectedTags].join(','),
         isPublic: document.querySelector('input[name="visibility"]:checked').value === 'public',
-        tags: [...selectedTags],
         words: readyEntries.map(obj => ({
-          word:    obj.word.trim(),
-          meaning: obj.meaning.trim(),
-          pos:     obj.pos || null,
-          ipa:     (obj.ipa || '').trim() || null,
-          example: (obj.example || '').trim() || null,
-          tip:     (obj.memo || '').trim() || null,
+          word:      obj.word.trim(),
+          meaning:   obj.meaning.trim(),
+          pos:       obj.pos || null,
+          ipa:       (obj.ipa || '').trim() || null,
+          examples:  (obj.example || '').trim() || null,
+          memoryTip: (obj.memo || '').trim() || null,
         })),
       };
 
@@ -559,7 +560,7 @@
       saveBtn.textContent = '저장 중...';
 
       try {
-        const res = await fetch('/api/vocab/manual', {
+        const res = await fetch('/api/vocab', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
           body: JSON.stringify(payload),
@@ -567,8 +568,8 @@
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.message || '저장에 실패했습니다.');
 
-        showOk(`✅ 단어장이 저장되었습니다! (${data.wordCount || readyEntries.length}개 단어)`);
-        setTimeout(() => { window.location.href = `vocab.html?id=${data.id}`; }, 1200);
+        showOk(`✅ 단어장이 저장되었습니다! (${readyEntries.length}개 단어)`);
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
       } catch (err) {
         showErr(err.message || '서버와 통신할 수 없습니다.');
       } finally {
