@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>단어 직접 입력 — WordCraft AI</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .page-wrap { padding-top: 80px; min-height: 100vh; background: var(--bg); }
+
+    .page-header { background: var(--bg-2); border-bottom: 1px solid var(--border); padding: 28px 0; }
+    .page-header__inner { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+    .page-header p { color: var(--text-2); font-size: 0.9rem; }
+    .page-header__badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; background: var(--accent-dim);
+      border: 1px solid var(--accent); border-radius: 100px;
+      font-size: 0.75rem; font-weight: 700; color: var(--accent-2);
+      white-space: nowrap; margin-top: 4px;
+    }
+
+    .main-wrap { padding: 40px 0 80px; }
+    .main-grid { display: grid; grid-template-columns: 1fr 340px; gap: 28px; }
+    @media (max-width: 860px) { .main-grid { grid-template-columns: 1fr; } }
+
+    /* ── Form card ── */
+    .fc {
+      background: var(--bg-3); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px;
+    }
+    .fc + .fc { margin-top: 18px; }
+    .fc__title { font-size: 0.95rem; font-weight: 700; margin-bottom: 20px; }
+
+    .fg { margin-bottom: 16px; }
+    .fg:last-child { margin-bottom: 0; }
+    .fg label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+    .fg input, .fg textarea, .fg select {
+      width: 100%; background: var(--bg-4); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px;
+      color: var(--text); font-size: 0.9rem; font-family: var(--font);
+      transition: border-color .2s; outline: none;
+    }
+    .fg input:focus, .fg textarea:focus, .fg select:focus { border-color: var(--accent); }
+    .fg textarea { resize: vertical; min-height: 80px; line-height: 1.7; }
+    .fg .hint { font-size: 0.73rem; color: var(--text-3); margin-top: 5px; }
+    .fg .char-count { font-size: 0.72rem; color: var(--text-3); text-align: right; margin-top: 3px; }
+
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 480px) { .row-2 { grid-template-columns: 1fr; } }
+
+    /* ── Tag chips ── */
+    .tags-selector { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag-chip {
+      padding: 5px 12px; border: 1.5px solid var(--border-2);
+      border-radius: 100px; font-size: 0.8rem; font-weight: 600;
+      color: var(--text-2); cursor: pointer; transition: all .2s; user-select: none;
+    }
+    .tag-chip:hover { border-color: var(--accent); color: var(--accent-2); }
+    .tag-chip.selected { border-color: var(--accent); color: var(--accent-2); background: var(--accent-dim); }
+
+    /* ── Word entry row ── */
+    .word-entry-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .word-entry {
+      background: var(--bg-3); border: 1.5px solid var(--border-2);
+      border-radius: var(--radius-lg); padding: 20px;
+      position: relative; transition: border-color .2s;
+    }
+    .word-entry:focus-within { border-color: var(--accent); }
+
+    .word-entry__header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .word-entry__num {
+      width: 26px; height: 26px; background: var(--accent-dim);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 800; color: var(--accent-2); flex-shrink: 0;
+    }
+    .word-entry__actions { display: flex; gap: 6px; }
+    .icon-btn {
+      background: none; border: 1px solid var(--border); border-radius: 8px;
+      width: 28px; height: 28px; cursor: pointer; font-size: 0.85rem;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-3); transition: border-color .2s, color .2s;
+    }
+    .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .icon-btn.danger:hover { border-color: #e55; color: #e55; }
+
+    .word-entry__fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 600px) { .word-entry__fields { grid-template-columns: 1fr; } }
+    .word-entry__fields .full { grid-column: 1 / -1; }
+
+    .entry-input {
+      width: 100%; background: var(--bg-4); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 9px 12px; color: var(--text);
+      font-size: 0.88rem; font-family: var(--font); outline: none; transition: border-color .2s;
+    }
+    .entry-input:focus { border-color: var(--accent); }
+    .entry-input.error { border-color: #e55 !important; }
+    .entry-input::placeholder { color: var(--text-3); }
+    .entry-label {
+      display: block; font-size: 0.73rem; font-weight: 600;
+      color: var(--text-3); margin-bottom: 5px;
+    }
+    .required { color: var(--accent); }
+
+    .add-word-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 12px; border: 1.5px dashed var(--border-2);
+      border-radius: var(--radius-lg); background: none; cursor: pointer;
+      color: var(--text-3); font-size: 0.88rem; font-family: var(--font);
+      transition: border-color .2s, color .2s, background .2s;
+    }
+    .add-word-btn:hover { border-color: var(--accent); color: var(--accent-2); background: var(--accent-dim); }
+
+    /* ── Sidebar ── */
+    .sidebar-sticky { position: sticky; top: 88px; }
+
+    .summary-stat {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; background: var(--bg-4); border-radius: var(--radius);
+      font-size: 0.85rem; margin-bottom: 10px;
+    }
+    .summary-stat span { color: var(--text-2); }
+    .summary-stat strong { color: var(--accent-2); font-size: 1rem; }
+
+    /* Preview list */
+    .preview-list { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; }
+    .preview-item {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 8px 10px; background: var(--bg-4); border-radius: var(--radius);
+      font-size: 0.83rem;
+    }
+    .preview-item__num {
+      width: 20px; height: 20px; background: var(--accent-dim); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.68rem; font-weight: 700; color: var(--accent-2); flex-shrink: 0; margin-top: 1px;
+    }
+    .preview-item__word { font-weight: 700; color: var(--text); }
+    .preview-item__meaning { color: var(--text-3); font-size: 0.78rem; margin-top: 1px; }
+    .preview-empty { font-size: 0.82rem; color: var(--text-3); text-align: center; padding: 24px 0; }
+
+    /* Feedback banners */
+    .banner {
+      display: none; border-radius: var(--radius); padding: 10px 14px;
+      font-size: 0.85rem; margin-top: 10px;
+    }
+    .banner.error   { background: rgba(255,80,80,.12); border: 1px solid rgba(255,80,80,.4); color: #ff8080; }
+    .banner.success { background: rgba(62,207,142,.12); border: 1px solid rgba(62,207,142,.4); color: var(--success); }
+
+    .btn-full { width: 100%; justify-content: center; }
+
+    /* Visibility radio */
+    .vis-row { display: flex; gap: 14px; margin-top: 4px; }
+    .vis-row label {
+      display: flex; align-items: center; gap: 6px;
+      cursor: pointer; font-size: 0.88rem; color: var(--text-2);
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="index.html" class="nav__logo">🔤 WordCraft<span>AI</span></a>
+      <ul class="nav__links">
+        <li><a href="dashboard.html">대시보드</a></li>
+        <li><a href="vocab-new.html">단어장 만들기</a></li>
+        <li><a href="community.html">커뮤니티</a></li>
+      </ul>
+      <div class="nav__actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="테마 전환">
+          <span class="theme-toggle__icon theme-toggle__icon--dark">🌙</span>
+          <span class="theme-toggle__icon theme-toggle__icon--light">☀️</span>
+        </button>
+        <a href="settings.html" class="btn btn--ghost">⚙️ 설정</a>
+        <button class="btn btn--ghost" id="logoutBtn">로그아웃</button>
+      </div>
+      <button class="nav__hamburger" id="hamburger" aria-label="메뉴">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav__mobile" id="mobileMenu">
+      <a href="dashboard.html">대시보드</a>
+      <a href="vocab-new.html">단어장 만들기</a>
+      <a href="community.html">커뮤니티</a>
+      <a href="settings.html">설정</a>
+      <button class="btn btn--ghost" id="logoutBtnMobile">로그아웃</button>
+    </div>
+  </nav>
+
+  <div class="page-wrap">
+
+    <!-- 페이지 헤더 -->
+    <div class="page-header">
+      <div class="container">
+        <div class="page-header__inner">
+          <div>
+            <h1>단어 직접 입력</h1>
+            <p>단어와 뜻을 직접 작성하여 나만의 단어장을 만드세요. AI 없이 원하는 내용을 자유롭게 입력할 수 있습니다.</p>
+          </div>
+          <div>
+            <span class="page-header__badge">✍️ 직접 입력 모드</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 본문 -->
+    <div class="main-wrap">
+      <div class="container">
+        <div class="main-grid">
+
+          <!-- ── 좌측: 폼 영역 ── -->
+          <div>
+
+            <!-- 기본 정보 -->
+            <div class="fc">
+              <div class="fc__title">📋 단어장 기본 정보</div>
+
+              <div class="fg">
+                <label for="vocabTitle">단어장 제목 <span class="required">*</span></label>
+                <input type="text" id="vocabTitle" class="form-input" placeholder="예: 내가 모르는 영단어 모음"
+                       maxlength="60" oninput="updateCharCount(this,'titleCount',60)" />
+                <div class="char-count"><span id="titleCount">0</span> / 60</div>
+              </div>
+
+              <div class="fg">
+                <label for="vocabDesc">설명 (선택)</label>
+                <input type="text" id="vocabDesc" class="form-input" placeholder="단어장에 대한 간단한 설명"
+                       maxlength="120" oninput="updateCharCount(this,'descCount',120)" />
+                <div class="char-count"><span id="descCount">0</span> / 120</div>
+              </div>
+
+              <div class="fg">
+                <label>공개 여부</label>
+                <div class="vis-row">
+                  <label><input type="radio" name="visibility" value="private" checked /> 🔒 비공개</label>
+                  <label><input type="radio" name="visibility" value="public" /> 🌐 공개 (커뮤니티 공유)</label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 태그 선택 -->
+            <div class="fc">
+              <div class="fc__title">🏷️ 학습 태그 선택</div>
+              <div class="tags-selector" id="tagsSelector">
+                <div class="tag-chip" data-tag="수능">수능</div>
+                <div class="tag-chip" data-tag="TOEIC">토익 (TOEIC)</div>
+                <div class="tag-chip" data-tag="TOEFL">토플 (TOEFL)</div>
+                <div class="tag-chip" data-tag="TEPS">텝스 (TEPS)</div>
+                <div class="tag-chip" data-tag="IELTS">IELTS</div>
+                <div class="tag-chip" data-tag="일상회화">일상회화</div>
+                <div class="tag-chip" data-tag="비즈니스">비즈니스</div>
+                <div class="tag-chip" data-tag="학술">학술</div>
+              </div>
+              <div class="hint" style="margin-top:10px;font-size:.73rem;color:var(--text-3);">여러 태그를 선택할 수 있습니다.</div>
+            </div>
+
+            <!-- 단어 입력 목록 -->
+            <div class="fc">
+              <div class="fc__title">📝 단어 입력</div>
+              <div class="word-entry-list" id="wordEntryList">
+                <!-- JS로 첫 항목 렌더링 -->
+              </div>
+              <button class="add-word-btn" id="addWordBtn" style="margin-top:14px;" type="button">
+                + 단어 추가
+              </button>
+            </div>
+
+          </div>
+
+          <!-- ── 우측: 사이드바 ── -->
+          <div class="sidebar-sticky">
+
+            <!-- 저장 영역 -->
+            <div class="fc">
+              <div class="fc__title">💾 저장</div>
+
+              <div class="summary-stat">
+                <span>선택된 태그</span>
+                <strong id="sideTagCount">0개</strong>
+              </div>
+              <div class="summary-stat">
+                <span>입력된 단어</span>
+                <strong id="sideWordCount">0개</strong>
+              </div>
+              <div class="summary-stat">
+                <span>완성된 단어 <span style="font-size:.7rem;color:var(--text-3);">(단어+뜻 필수)</span></span>
+                <strong id="sideReadyCount">0개</strong>
+              </div>
+
+              <button class="btn btn--primary btn-full" id="saveBtn" type="button">💾 단어장 저장</button>
+              <div class="banner error" id="errBanner"></div>
+              <div class="banner success" id="okBanner"></div>
+            </div>
+
+            <!-- 미리보기 -->
+            <div class="fc" style="margin-top:18px;">
+              <div class="fc__title">👁️ 미리보기</div>
+              <div class="preview-list" id="previewList">
+                <p class="preview-empty">단어를 입력하면 여기에 표시됩니다.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+  <script>
+  (function () {
+    /* ── 테마 ── */
+    const html = document.documentElement;
+    const themeToggle = document.getElementById('themeToggle');
+    if (localStorage.getItem('wc-theme') === 'light') html.classList.add('light');
+    themeToggle.addEventListener('click', () => {
+      html.classList.toggle('light');
+      localStorage.setItem('wc-theme', html.classList.contains('light') ? 'light' : 'dark');
+    });
+
+    /* ── 로그아웃 ── */
+    function logout() {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      window.location.href = 'login.html';
+    }
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+    document.getElementById('logoutBtnMobile').addEventListener('click', logout);
+
+    /* ── 인증 체크 ── */
+    const token = localStorage.getItem('accessToken');
+    if (!token) { window.location.href = 'login.html'; return; }
+
+    /* ── 태그 선택 ── */
+    const selectedTags = new Set();
+    document.querySelectorAll('.tag-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const tag = chip.dataset.tag;
+        if (selectedTags.has(tag)) { selectedTags.delete(tag); chip.classList.remove('selected'); }
+        else { selectedTags.add(tag); chip.classList.add('selected'); }
+        document.getElementById('sideTagCount').textContent = selectedTags.size + '개';
+      });
+    });
+
+    /* ── 글자 수 카운터 (전역 노출) ── */
+    window.updateCharCount = function (input, countId, max) {
+      const len = input.value.length;
+      document.getElementById(countId).textContent = len;
+      if (len >= max) input.style.borderColor = 'var(--warn)';
+      else input.style.borderColor = '';
+    };
+
+    /* ── 단어 항목 상태 ── */
+    let entryId = 0;
+    const entries = [];   // { id, word, meaning, pos, example, memo }
+
+    function createEntry() {
+      const id = ++entryId;
+      const obj = { id, word: '', meaning: '', pos: '', example: '', memo: '' };
+      entries.push(obj);
+      return obj;
+    }
+
+    function renderEntry(obj) {
+      const el = document.createElement('div');
+      el.className = 'word-entry';
+      el.dataset.id = obj.id;
+      el.innerHTML = `
+        <div class="word-entry__header">
+          <span class="word-entry__num" id="num-${obj.id}">0</span>
+          <div class="word-entry__actions">
+            <button class="icon-btn" title="위로" data-move="up">↑</button>
+            <button class="icon-btn" title="아래로" data-move="down">↓</button>
+            <button class="icon-btn danger" title="삭제" data-action="delete">✕</button>
+          </div>
+        </div>
+        <div class="word-entry__fields">
+          <div>
+            <span class="entry-label">단어 / 표현 <span class="required">*</span></span>
+            <input class="entry-input" placeholder="예: implement" data-field="word" value="${escHtml(obj.word)}" maxlength="80" />
+          </div>
+          <div>
+            <span class="entry-label">뜻 (한국어) <span class="required">*</span></span>
+            <input class="entry-input" placeholder="예: 시행하다, 구현하다" data-field="meaning" value="${escHtml(obj.meaning)}" maxlength="120" />
+          </div>
+          <div>
+            <span class="entry-label">품사</span>
+            <select class="entry-input" data-field="pos">
+              <option value="">선택 안 함</option>
+              <option value="명사">명사 (noun)</option>
+              <option value="동사">동사 (verb)</option>
+              <option value="형용사">형용사 (adjective)</option>
+              <option value="부사">부사 (adverb)</option>
+              <option value="전치사">전치사 (preposition)</option>
+              <option value="접속사">접속사 (conjunction)</option>
+              <option value="구동사">구동사 (phrasal verb)</option>
+              <option value="숙어">숙어 (idiom)</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
+          <div>
+            <span class="entry-label">발음 기호 (선택)</span>
+            <input class="entry-input" placeholder="예: /ˈɪmplɪmənt/" data-field="ipa" value="" maxlength="60" />
+          </div>
+          <div class="full">
+            <span class="entry-label">예문 (선택)</span>
+            <textarea class="entry-input" rows="2" placeholder="예: We need to implement this plan immediately." data-field="example" maxlength="300">${escHtml(obj.example)}</textarea>
+          </div>
+          <div class="full">
+            <span class="entry-label">메모 / 기억 팁 (선택)</span>
+            <textarea class="entry-input" rows="2" placeholder="예: impl(안에 넣다) → 실행하다로 연상" data-field="memo" maxlength="200">${escHtml(obj.memo)}</textarea>
+          </div>
+        </div>`;
+
+      /* 품사 select 복원 */
+      const sel = el.querySelector('select[data-field="pos"]');
+      sel.value = obj.pos || '';
+
+      /* 필드 변경 이벤트 */
+      el.querySelectorAll('[data-field]').forEach(inp => {
+        inp.addEventListener('input', () => {
+          obj[inp.dataset.field] = inp.value;
+          inp.classList.remove('error');
+          refreshSidebar();
+        });
+        inp.addEventListener('change', () => {
+          obj[inp.dataset.field] = inp.value;
+          refreshSidebar();
+        });
+      });
+
+      /* 버튼 이벤트 */
+      el.querySelector('[data-action="delete"]').addEventListener('click', () => deleteEntry(obj.id));
+      el.querySelector('[data-move="up"]').addEventListener('click', () => moveEntry(obj.id, -1));
+      el.querySelector('[data-move="down"]').addEventListener('click', () => moveEntry(obj.id, 1));
+
+      return el;
+    }
+
+    function appendEntry(obj) {
+      const list = document.getElementById('wordEntryList');
+      const el = renderEntry(obj);
+      list.appendChild(el);
+      refreshNumbers();
+      refreshSidebar();
+      /* 스크롤 */
+      setTimeout(() => { el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 50);
+    }
+
+    function deleteEntry(id) {
+      if (entries.length <= 1) { showErr('최소 1개의 단어 항목이 필요합니다.'); return; }
+      const idx = entries.findIndex(e => e.id === id);
+      if (idx === -1) return;
+      entries.splice(idx, 1);
+      document.querySelector(`.word-entry[data-id="${id}"]`).remove();
+      refreshNumbers();
+      refreshSidebar();
+    }
+
+    function moveEntry(id, dir) {
+      const idx = entries.findIndex(e => e.id === id);
+      const newIdx = idx + dir;
+      if (newIdx < 0 || newIdx >= entries.length) return;
+      [entries[idx], entries[newIdx]] = [entries[newIdx], entries[idx]];
+      reRenderList();
+    }
+
+    function reRenderList() {
+      const list = document.getElementById('wordEntryList');
+      list.innerHTML = '';
+      entries.forEach(obj => list.appendChild(renderEntry(obj)));
+      refreshNumbers();
+      refreshSidebar();
+    }
+
+    function refreshNumbers() {
+      entries.forEach((obj, i) => {
+        const numEl = document.getElementById('num-' + obj.id);
+        if (numEl) numEl.textContent = i + 1;
+      });
+    }
+
+    function isReady(obj) {
+      return obj.word.trim().length > 0 && obj.meaning.trim().length > 0;
+    }
+
+    function refreshSidebar() {
+      const ready = entries.filter(isReady);
+      document.getElementById('sideWordCount').textContent = entries.length + '개';
+      document.getElementById('sideReadyCount').textContent = ready.length + '개';
+      renderPreview(ready);
+    }
+
+    function renderPreview(items) {
+      const list = document.getElementById('previewList');
+      if (items.length === 0) {
+        list.innerHTML = '<p class="preview-empty">단어(필수)와 뜻(필수)을 입력하면 여기에 표시됩니다.</p>';
+        return;
+      }
+      list.innerHTML = items.slice(0, 20).map((obj, i) => `
+        <div class="preview-item">
+          <div class="preview-item__num">${i + 1}</div>
+          <div>
+            <div class="preview-item__word">${escHtml(obj.word)}</div>
+            <div class="preview-item__meaning">${escHtml(obj.meaning)}</div>
+          </div>
+        </div>`).join('') +
+        (items.length > 20 ? `<p style="font-size:.73rem;color:var(--text-3);text-align:center;padding:6px 0;">외 ${items.length - 20}개...</p>` : '');
+    }
+
+    /* ── 추가 버튼 ── */
+    document.getElementById('addWordBtn').addEventListener('click', () => {
+      const obj = createEntry();
+      appendEntry(obj);
+    });
+
+    /* ── 저장 ── */
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+      clearFeedback();
+
+      const title = document.getElementById('vocabTitle').value.trim();
+      if (!title) { showErr('단어장 제목을 입력해주세요.'); document.getElementById('vocabTitle').focus(); return; }
+
+      const readyEntries = entries.filter(isReady);
+      if (readyEntries.length === 0) { showErr('단어와 뜻이 모두 입력된 항목이 하나 이상 있어야 합니다.'); return; }
+
+      /* 미완성 항목 하이라이트 */
+      entries.forEach(obj => {
+        const wordEl = document.querySelector(`.word-entry[data-id="${obj.id}"] [data-field="word"]`);
+        const meaningEl = document.querySelector(`.word-entry[data-id="${obj.id}"] [data-field="meaning"]`);
+        if (wordEl && !obj.word.trim()) wordEl.classList.add('error');
+        if (meaningEl && !obj.meaning.trim() && obj.word.trim()) meaningEl.classList.add('error');
+      });
+
+      const payload = {
+        title,
+        description: document.getElementById('vocabDesc').value.trim(),
+        isPublic: document.querySelector('input[name="visibility"]:checked').value === 'public',
+        tags: [...selectedTags],
+        words: readyEntries.map(obj => ({
+          word:    obj.word.trim(),
+          meaning: obj.meaning.trim(),
+          pos:     obj.pos || null,
+          ipa:     (obj.ipa || '').trim() || null,
+          example: (obj.example || '').trim() || null,
+          tip:     (obj.memo || '').trim() || null,
+        })),
+      };
+
+      const saveBtn = document.getElementById('saveBtn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = '저장 중...';
+
+      try {
+        const res = await fetch('/api/vocab/manual', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || '저장에 실패했습니다.');
+
+        showOk(`✅ 단어장이 저장되었습니다! (${data.wordCount || readyEntries.length}개 단어)`);
+        setTimeout(() => { window.location.href = `vocab.html?id=${data.id}`; }, 1200);
+      } catch (err) {
+        showErr(err.message || '서버와 통신할 수 없습니다.');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = '💾 단어장 저장';
+      }
+    });
+
+    /* ── 피드백 배너 ── */
+    function showErr(msg) {
+      const el = document.getElementById('errBanner');
+      el.style.display = 'block';
+      el.textContent = msg;
+    }
+    function showOk(msg) {
+      const el = document.getElementById('okBanner');
+      el.style.display = 'block';
+      el.textContent = msg;
+    }
+    function clearFeedback() {
+      document.getElementById('errBanner').style.display = 'none';
+      document.getElementById('okBanner').style.display = 'none';
+    }
+
+    /* ── 유틸 ── */
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    /* ── 초기 항목 1개 렌더링 ── */
+    const first = createEntry();
+    appendEntry(first);
+
+  })();
+  </script>
+</body>
+</html>

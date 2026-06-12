@@ -310,3 +310,76 @@ function cycleWord() {
 `index.html` · `login.html` · `register.html` · `dashboard.html` · `vocab-new.html` · `vocab.html` · `vocab-import.html` · `test.html` · `test-result.html` · `community.html` · `settings.html`
 
 > **주의:** FrontEnd 파일은 디자인 확인 전용입니다. 실제 기능 수정은 `src/main/resources/static/` 파일에서 진행 후 FrontEnd를 재생성해야 합니다.
+
+---
+
+## 수동 단어 입력 페이지 (2026-06-12)
+
+### 신규 파일
+
+| 파일 | 위치 | 설명 |
+|---|---|---|
+| `manual-vocab-add.html` | `src/main/resources/static/` | 실서비스용 (인증 포함) |
+| `design_only_view.html` | `FrontEnd/` | 디자인 미리보기 전용 (인증 없음) |
+
+### 기능 개요
+
+AI 없이 사용자가 단어·뜻·예문·메모를 직접 입력하는 단어장 생성 페이지. `vocab-new.html`(AI 자동 생성)과 대응되는 수동 입력 방식.
+
+**구성 섹션:**
+
+| 섹션 | 내용 |
+|---|---|
+| 단어장 기본 정보 | 제목(필수·60자), 설명(선택·120자), 공개/비공개 라디오, 실시간 글자 수 카운터 |
+| 학습 태그 선택 | 수능·토익·토플·텝스·IELTS·일상회화·비즈니스·학술 멀티 선택 |
+| 단어 입력 목록 | 동적 항목 추가/삭제/순서변경, 각 항목: 단어(필수)·뜻(필수)·품사·발음기호·예문·메모 |
+| 사이드바 | 태그 수·단어 수·완성 단어 수 실시간 집계, 입력 미리보기, 저장 버튼 |
+
+**API 연동:**
+```
+POST /api/vocab/manual
+Authorization: Bearer {accessToken}
+Body: { title, description, isPublic, tags[], words[{ word, meaning, pos, ipa, example, tip }] }
+→ 성공 시 vocab.html?id={data.id} 이동
+```
+
+**`design_only_view.html` 차이점 (원본 대비):**
+
+| 항목 | 원본 | 디자인 전용 |
+|---|---|---|
+| 인증 체크 | `if (!token) { ... return; }` | 제거 |
+| 로그아웃 | `localStorage.removeItem + redirect` | `/* design-preview: no redirect */` |
+| 저장 API 호출 | `fetch('/api/vocab/manual', ...)` | 제거, 성공 메시지만 표시 |
+| CSS/JS 경로 | `style.css` / `main.js` | `../src/main/resources/static/style.css` 등 |
+
+---
+
+### 버그 수정 이력 — `.reveal` 클래스와 동적 요소 (2026-06-12)
+
+**증상:** 단어 입력 칸이 화면에 전혀 보이지 않음.
+
+**원인:** `style.css`의 `.reveal` 클래스는 `opacity: 0; transform: translateY(24px)`으로 시작하며, `main.js`의 `IntersectionObserver`가 `.visible` 클래스를 추가해야 비로소 보이는 구조. 그런데 `main.js`의 observer는 **페이지 로드 시점에 이미 존재하는 요소만** 등록한다. JS로 나중에 동적 생성된 `.word-entry` 요소들은 observer에 등록되지 않아 영구적으로 `opacity: 0` 상태를 유지했음.
+
+**수정:** `renderEntry()` 함수에서 `el.className = 'word-entry reveal'` → `el.className = 'word-entry'` 로 변경. 동적 생성 요소에는 `.reveal` 클래스를 부여하지 않음.
+
+> **규칙:** JS로 동적 생성하는 DOM 요소에는 `.reveal` 클래스를 사용하지 말 것. `main.js`의 IntersectionObserver는 최초 로드 시 정적으로 존재하는 요소만 감시한다.
+
+---
+
+### CSS 레이어 계층 규칙 (다크모드 입력 필드 가시성)
+
+다크모드 배경 변수 밝기 순서: `--bg` < `--bg-2` < `--bg-3` < `--bg-4` (bg-4가 가장 밝음)
+
+입력 필드가 보이려면 **컨테이너보다 밝은(높은 번호) 배경**을 써야 한다:
+
+```
+.fc (form card)   → background: var(--bg-3)   ← 카드
+.word-entry       → background: var(--bg-3)   ← 단어 항목 (테두리로 구분)
+.entry-input      → background: var(--bg-4)   ← 입력칸 (bg-3보다 밝아서 보임)
+```
+
+**잘못된 패턴 (입력칸 안 보임):**
+```
+.word-entry  → bg-4   (밝음)
+.entry-input → bg-3   (어두움) ← 컨테이너보다 어두워 보이지 않음
+```
