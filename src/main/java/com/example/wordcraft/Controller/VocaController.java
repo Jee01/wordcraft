@@ -1,9 +1,13 @@
 package com.example.wordcraft.Controller;
 
+import com.example.wordcraft.DTO.VocaCreateRequestDTO;
+import com.example.wordcraft.DTO.VocaResponseDTO;
 import com.example.wordcraft.Service.VocaService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -14,12 +18,12 @@ public class VocaController {
     public VocaController(VocaService vocaService) {this.vocaService = vocaService;}
 
     @PostMapping //반환 타입 이후 변경
-    public ResponseEntity<Map<String, String>> createVoca() {
+    public ResponseEntity<VocaResponseDTO> createVoca(@Valid @RequestBody VocaCreateRequestDTO vocaCreateRequestDTO) {
 
         return null;
     }
     @GetMapping
-    public ResponseEntity<Map<String, String>> getVocaList() {
+    public ResponseEntity<List<VocaResponseDTO>> getVocaList() {
         return null;
     }
 
@@ -29,12 +33,12 @@ public class VocaController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String, String>> updateVoca(@PathVariable String id, @RequestBody Map<String, String> voca) {
+    public ResponseEntity<VocaResponseDTO> updateVoca(@PathVariable String id, @RequestBody Map<String, String> voca) {
         return null;
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, String>> deleteVoca(@PathVariable String id) {
+    public ResponseEntity<Void> deleteVoca(@PathVariable String id) {
         return null;
     }
 }
