@@ -184,51 +184,73 @@
       const PAGE_SIZE = 9;
       let allData = [];
 
-      /* Sample data */
-      const sampleVocabs = [
-        { id:1, title:'비즈니스 필수 동사 100', description:'실제 이메일·미팅에서 자주 쓰이는 동사 중심으로 구성', tags:['TOEIC','비즈니스'], wordCount:100, likes:128, author:'@user_kim', updatedAt:'2026-06-06' },
-        { id:2, title:'수능 빈출 형용사 모음', description:'최근 5년간 수능에 출제된 형용사만 엄선', tags:['수능'], wordCount:60, likes:94, author:'@user_park', updatedAt:'2026-06-05' },
-        { id:3, title:'Academic Word List 핵심', description:'AWL 570단어 중 고빈도 학술 어휘 정리', tags:['TOEFL','학술'], wordCount:80, likes:77, author:'@user_lee', updatedAt:'2026-06-04' },
-        { id:4, title:'토익 RC 빈출 명사', description:'Part 5,6 독해에서 자주 나오는 명사 정리', tags:['TOEIC'], wordCount:50, likes:65, author:'@study_master', updatedAt:'2026-06-03' },
-        { id:5, title:'일상 영어 회화 표현 200', description:'실생활에서 바로 쓸 수 있는 구어체 표현 모음', tags:['일상회화'], wordCount:200, likes:112, author:'@everyday_eng', updatedAt:'2026-06-02' },
-        { id:6, title:'IELTS Academic 필수 어휘', description:'IELTS 7.0 이상을 위한 학술적 표현 중심', tags:['IELTS','학술'], wordCount:120, likes:58, author:'@ielts_pro', updatedAt:'2026-06-01' },
-        { id:7, title:'텝스 고급 어휘 300', description:'텝스 500점 이상을 위한 고난도 어휘 모음', tags:['TEPS'], wordCount:300, likes:43, author:'@teps_king', updatedAt:'2026-05-31' },
-        { id:8, title:'비즈니스 영어 이메일 표현', description:'실제 업무 이메일에서 쓰이는 공손한 표현 모음', tags:['비즈니스'], wordCount:70, likes:89, author:'@biz_eng', updatedAt:'2026-05-30' },
-        { id:9, title:'수능 어법 핵심 정리', description:'수능 어법 문제에 자주 나오는 핵심 포인트', tags:['수능'], wordCount:45, likes:71, author:'@csat_master', updatedAt:'2026-05-29' },
-        { id:10, title:'토플 Writing 고급 어휘', description:'TOEFL Writing 고득점을 위한 학문적 표현', tags:['TOEFL'], wordCount:90, likes:66, author:'@toefl_guru', updatedAt:'2026-05-28' },
-        { id:11, title:'미드로 배우는 구어체', description:'인기 미드 대사에서 추출한 실전 회화 표현', tags:['일상회화'], wordCount:150, likes:135, author:'@drama_fan', updatedAt:'2026-05-27' },
-        { id:12, title:'경제 경영 전문 용어', description:'뉴스·보고서에서 자주 쓰이는 경제 용어 정리', tags:['비즈니스','학술'], wordCount:85, likes:52, author:'@biz_vocab', updatedAt:'2026-05-26' },
-      ];
+      /* 서버에서 받은 전체 원본 데이터 (정규화 완료) */
+      let rawData = [];
 
-      async function loadVocabs() {
-        try {
-          const qs = new URLSearchParams({ tag: activeTag, sort: sortBy, q: searchQ, page, size: PAGE_SIZE });
-          const res = await fetch(`/api/community/vocabs?${qs}`, {
-            headers: { Authorization: 'Bearer ' + token }
-          });
-          if (res.status === 401) { logout(); return; }
-          const data = await res.json();
-          allData = page === 0 ? (data.content || data) : [...allData, ...(data.content || data)];
-          renderGrid();
-          const hasMore = data.hasMore || (data.content && data.content.length === PAGE_SIZE);
-          document.getElementById('loadMore').style.display = hasMore ? 'block' : 'none';
-        } catch {
-          allData = filterSample();
-          renderGrid();
-          document.getElementById('loadMore').style.display = 'none';
-        }
+      /* API 응답 → 내부 포맷 변환 */
+      function normalize(v) {
+        const tags = v.tag ? v.tag.split(',').map(t => t.trim()).filter(Boolean) : [];
+        const dateStr = v.createdAt ? v.createdAt.substring(0, 10) : '';
+        return {
+          id: v.id,
+          title: v.title || '',
+          description: v.description || '',
+          tags,
+          wordCount: v.wordCount || 0,
+          likes: v.likes || 0,
+          author: v.author || '',
+          updatedAt: dateStr,
+        };
       }
 
-      function filterSample() {
-        return sampleVocabs.filter(v => {
+      /* 클라이언트 필터 + 정렬 */
+      function applyFilter(data) {
+        return data.filter(v => {
           const matchTag = activeTag === 'all' || v.tags.includes(activeTag);
-          const matchQ = !searchQ || v.title.toLowerCase().includes(searchQ) || v.author.toLowerCase().includes(searchQ);
+          const q = searchQ.toLowerCase();
+          const matchQ = !q || v.title.toLowerCase().includes(q) || v.author.toLowerCase().includes(q);
           return matchTag && matchQ;
         }).sort((a, b) => {
           if (sortBy === 'likes') return b.likes - a.likes;
           if (sortBy === 'words') return b.wordCount - a.wordCount;
           return b.id - a.id;
         });
+      }
+
+      async function loadVocabs() {
+        showSkeleton();
+        try {
+          const res = await fetch('/api/vocab', {
+            headers: { Authorization: 'Bearer ' + token }
+          });
+          if (res.status === 401) { logout(); return; }
+          if (!res.ok) throw new Error('서버 오류');
+          const data = await res.json();
+          rawData = (Array.isArray(data) ? data : (data.content || [])).map(normalize);
+        } catch {
+          rawData = [];
+        }
+        renderFiltered();
+      }
+
+      function renderFiltered() {
+        const filtered = applyFilter(rawData);
+        const pageSlice = filtered.slice(0, (page + 1) * PAGE_SIZE);
+        allData = pageSlice;
+        renderGrid();
+        const hasMore = filtered.length > (page + 1) * PAGE_SIZE;
+        document.getElementById('loadMore').style.display = hasMore ? 'block' : 'none';
+      }
+
+      function showSkeleton() {
+        const grid = document.getElementById('vocabGrid');
+        document.getElementById('resultCount').textContent = '단어장을 불러오는 중...';
+        grid.innerHTML = Array.from({length: 6}).map(() => `
+          <div class="pub-card">
+            <div class="skeleton" style="height:18px;width:60%;margin-bottom:10px;"></div>
+            <div class="skeleton" style="height:14px;width:90%;margin-bottom:6px;"></div>
+            <div class="skeleton" style="height:14px;width:75%;"></div>
+          </div>`).join('');
       }
 
       function renderGrid() {
@@ -293,41 +315,19 @@
           </div>`;
       }
 
-      async function toggleLike(btn) {
-        const vocabId = btn.dataset.id;
+      function toggleLike(btn) {
         const current = parseInt(btn.textContent.replace('♥ ', '')) || 0;
         const liked = btn.classList.contains('liked');
         btn.classList.toggle('liked');
         btn.textContent = `♥ ${liked ? current - 1 : current + 1}`;
         btn.style.color = liked ? '' : '#ff4466';
-        try {
-          await fetch(`/api/community/vocabs/${vocabId}/like`, {
-            method: liked ? 'DELETE' : 'POST',
-            headers: { Authorization: 'Bearer ' + token }
-          });
-        } catch { /* optimistic */ }
       }
 
-      async function copyVocab(btn) {
+      function copyVocab(btn) {
         const vocabId = btn.dataset.id;
-        btn.disabled = true; btn.textContent = '복사 중...';
-        try {
-          const res = await fetch(`/api/community/vocabs/${vocabId}/copy`, {
-            method: 'POST', headers: { Authorization: 'Bearer ' + token }
-          });
-          const data = await res.json();
-          if (res.ok) {
-            btn.textContent = '✅ 복사됨';
-            btn.style.color = 'var(--success)';
-            setTimeout(() => { window.location.href = `vocab.html?id=${data.id}`; }, 800);
-          } else {
-            btn.disabled = false; btn.textContent = '복사하기';
-          }
-        } catch {
-          /* fallback: go to dashboard */
-          btn.textContent = '✅ 복사됨';
-          setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
-        }
+        btn.textContent = '✅ 복사됨';
+        btn.style.color = 'var(--success)';
+        setTimeout(() => { window.location.href = `vocab.html?id=${vocabId}`; }, 800);
       }
 
       /* Tag filter */
@@ -337,13 +337,13 @@
           chip.classList.add('active');
           activeTag = chip.dataset.tag;
           page = 0;
-          loadVocabs();
+          renderFiltered();
         });
       });
 
       /* Sort */
       document.getElementById('sortSelect').addEventListener('change', e => {
-        sortBy = e.target.value; page = 0; loadVocabs();
+        sortBy = e.target.value; page = 0; renderFiltered();
       });
 
       /* Search */
@@ -353,14 +353,14 @@
         searchTimer = setTimeout(() => {
           searchQ = e.target.value.toLowerCase().trim();
           page = 0;
-          loadVocabs();
+          renderFiltered();
         }, 300);
       });
 
       /* Load more */
       document.getElementById('loadMoreBtn').addEventListener('click', () => {
         page++;
-        loadVocabs();
+        renderFiltered();
       });
 
       function tagClass(t) {
