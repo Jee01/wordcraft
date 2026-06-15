@@ -15,4 +15,5 @@ public class VocaWordRequestDTO {
     private String ipa;
     private String examples;
     private String memoryTip;
+    //private boolean learned;
 }

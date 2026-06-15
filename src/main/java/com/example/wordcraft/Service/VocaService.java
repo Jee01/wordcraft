@@ -1,13 +1,16 @@
 package com.example.wordcraft.Service;
 
 import com.example.wordcraft.DTO.VocaCreateRequestDTO;
+import com.example.wordcraft.DTO.VocaDetailResponseDTO;
 import com.example.wordcraft.DTO.VocaResponseDTO;
+import com.example.wordcraft.DTO.VocaWordRequestDTO;
 import com.example.wordcraft.Entity.Users;
 import com.example.wordcraft.Entity.VocaWords;
 import com.example.wordcraft.Entity.Vocabularies;
 import com.example.wordcraft.Repository.UserRepository;
 import com.example.wordcraft.Repository.VocaWordsRepository;
 import com.example.wordcraft.Repository.VocabulariesRepository;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -86,5 +90,43 @@ public class VocaService {
                 .collect(Collectors.toList());
     }
 
+    //단어장 세부 조회
+    @Transactional
+    public VocaDetailResponseDTO getVocaDetail(Long id){
+        Vocabularies vocabularies = vocabulariesRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("vocabularies not found"));
+        List<VocaWords> vocaWords = vocaWordsRepository.findByVocabularyId(vocabularies.getId());
+
+        List<VocaWordRequestDTO> vocaWordRequestDTOS = vocaWords.stream()
+                .map(w->{
+                    VocaWordRequestDTO dto = new VocaWordRequestDTO();
+                    dto.setWord(w.getWord());
+                    dto.setMeaning(w.getMeanings());
+                    dto.setPos(w.getPos());
+                    dto.setIpa(w.getIpa());
+                    dto.setExamples(w.getExamples());
+                    dto.setMemoryTip(w.getMemoryTip());
+                    return dto;
+                })
+                .toList();
+
+        return VocaDetailResponseDTO.builder()
+                .id(vocabularies.getId())
+                .title(vocabularies.getTitle())
+                .isPublic(vocabularies.isPublic())
+                .wordCount(vocaWords.size())
+                .updatedAt(vocabularies.getCreatedAt().toString().substring(0, 10))
+                .author(vocabularies.getUser().getNickname())
+                .words(vocaWordRequestDTOS)
+                .build();
+    }
+
+    @Transactional
+    public void deleteVoca(Long id){
+        Vocabularies vocabularies = vocabulariesRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("vocabularies not found"));
+        vocaWordsRepository.deleteByVocabularyId(vocabularies.getId());
+        vocabulariesRepository.delete(vocabularies);
+    }
 
 }

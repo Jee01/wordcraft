@@ -237,6 +237,7 @@
           wordsData = vocabData.words || [];
           renderHeader(vocabData);
           renderWords(wordsData);
+          attachReveal();
         } catch {
           /* fallback sample data */
           vocabData = {
@@ -251,6 +252,7 @@
           ];
           renderHeader(vocabData);
           renderWords(wordsData);
+          attachReveal();
         }
       }
 
@@ -316,8 +318,8 @@
               </div>
             </div>
             <div class="wc__meaning">${escHtml(w.meaning)}</div>
-            <div class="wc__example">"${w.example}"</div>
-            ${w.tip ? `<div class="wc__tip">${escHtml(w.tip)}</div>` : ''}
+            <div class="wc__example">"${escHtml(w.examples || '')}"</div>
+            ${w.memoryTip ? `<div class="wc__tip">${escHtml(w.memoryTip)}</div>` : ''}
             <div class="wc__tags">
               ${w.pos ? `<span class="tag tag--noun">${escHtml(w.pos)}</span>` : ''}
               ${w.learned ? '<span class="wc__learned-badge">✅ 학습 완료</span>' : ''}

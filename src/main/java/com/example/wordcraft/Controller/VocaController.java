@@ -1,6 +1,7 @@
 package com.example.wordcraft.Controller;
 
 import com.example.wordcraft.DTO.VocaCreateRequestDTO;
+import com.example.wordcraft.DTO.VocaDetailResponseDTO;
 import com.example.wordcraft.DTO.VocaResponseDTO;
 import com.example.wordcraft.Service.VocaService;
 import jakarta.validation.Valid;
@@ -44,8 +45,8 @@ public class VocaController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Map<String, String>> getVocaById(@PathVariable String id) {
-        return null;
+    public ResponseEntity<VocaDetailResponseDTO> getVocaById(@PathVariable Long id) {
+        return ResponseEntity.ok(vocaService.getVocaDetail(id));
     }
 
     @PutMapping("/{id}")
@@ -54,7 +55,8 @@ public class VocaController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteVoca(@PathVariable String id) {
-        return null;
+    public ResponseEntity<Void> deleteVoca(@PathVariable Long id) {
+        vocaService.deleteVoca(id);
+        return ResponseEntity.noContent().build();
     }
 }

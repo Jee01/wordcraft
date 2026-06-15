@@ -454,3 +454,93 @@ Body: { title, description, isPublic, tags[], words[{ word, meaning, pos, ipa, e
 .word-entry  → bg-4   (밝음)
 .entry-input → bg-3   (어두움) ← 컨테이너보다 어두워 보이지 않음
 ```
+
+---
+
+## 커뮤니티 페이지 API 연동 (`community.html`, 2026-06-15)
+
+### 엔드포인트 변경
+
+| 항목 | 변경 전 | 변경 후 |
+|---|---|---|
+| 호출 URL | `GET /api/community/vocabs?tag=...&sort=...` (미존재) | `GET /api/vocab` |
+| 필터·정렬 | 서버 파라미터 | 클라이언트 사이드 처리 |
+| 페이지네이션 | 서버 페이지 요청 | `rawData` 슬라이싱 |
+
+### 데이터 흐름
+
+```
+loadVocabs()
+  → showSkeleton() (6개 shimmer 카드 표시)
+  → GET /api/vocab (Authorization 헤더 포함)
+  → 응답 배열을 normalize()로 변환 → rawData 저장
+  → renderFiltered() 호출
+
+renderFiltered()
+  → applyFilter(rawData) : 태그·검색어 필터 + 정렬
+  → page 기준 슬라이싱 → allData
+  → renderGrid() + "더 보기" 버튼 표시 여부 결정
+```
+
+### normalize() — VocaResponseDTO → 내부 포맷
+
+```js
+// 서버 응답 필드 → 내부 필드
+v.tag       (콤마 문자열)  → tags[]  (배열)
+v.nickname                 → author
+v.createdAt (LocalDateTime) → updatedAt (YYYY-MM-DD 앞 10자)
+```
+
+### 좋아요 / 복사 단순화
+
+- 좋아요: 서버 API 없음 → 클라이언트 상태 토글만 (API 호출 제거)
+- 복사: 서버 API 없음 → `vocab.html?id={id}` 로 바로 이동
+
+---
+
+## 대시보드 단어장 목록 API 연동 (`dashboard.html`, 2026-06-15)
+
+### 호출 엔드포인트
+
+`GET /api/vocab/my` — `Authorization: Bearer {token}` 헤더 포함.  
+Spring Security가 JWT에서 사용자 정보를 추출해 본인 단어장만 반환.
+
+### normalize() 적용
+
+`VocaResponseDTO` 필드명이 프론트 내부 포맷과 달라 변환 필요:
+
+| 서버 필드 | 내부 필드 | 변환 |
+|---|---|---|
+| `tag` (콤마 문자열) | `tags[]` | `split(',').map(trim)` |
+| `createdAt` (LocalDateTime) | `updatedAt` | `substring(0, 10)` |
+
+### 폴백 변경
+
+API 실패 시 샘플 단어장 표시 → **빈 상태(새 단어장 만들기 안내)**로 변경.  
+샘플 데이터가 실제 데이터인 것처럼 오해할 수 있어 제거.
+
+### Scroll reveal 동적 등록
+
+카드가 API 응답 후 동적으로 생성되므로, `renderVocabs()` 내부에서 카드 렌더 직후 IntersectionObserver를 등록.  
+(기존 페이지 로드 시점 정적 등록으로는 동적 카드가 `.visible` 미적용되는 문제 방지)
+
+---
+
+## 단어장 세부 페이지 백엔드 연동 (`vocab.html`, 2026-06-15)
+
+### 필드명 불일치 수정
+
+백엔드 `VocaDetailResponseDTO.words`는 `VocaWordRequestDTO` 타입으로, 프론트의 `wordCard()` 함수와 필드명이 달라 수정.
+
+| 백엔드 필드 | 변경 전 (프론트) | 변경 후 (프론트) |
+|---|---|---|
+| `examples` | `w.example` | `w.examples` |
+| `memoryTip` | `w.tip` | `w.memoryTip` |
+
+### 진입 시 단어 미표시 버그 수정
+
+**증상:** 페이지 최초 진입 시 단어 카드가 보이지 않음. 필터 변경 시엔 정상 표시.
+
+**원인:** `wordCard()`가 `.reveal` 클래스를 붙여 카드를 생성하는데, 최초 로드 시 `attachReveal()`을 호출하지 않아 카드가 `opacity: 0` 상태로 유지됨. 필터 변경 이벤트에는 `attachReveal()`이 연결되어 있어 그 시점엔 정상 동작.
+
+**수정:** API 성공 경로와 폴백 경로 양쪽에서 `renderWords()` 직후 `attachReveal()` 호출 추가.
