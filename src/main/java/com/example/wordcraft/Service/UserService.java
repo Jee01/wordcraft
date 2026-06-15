@@ -2,7 +2,6 @@ package com.example.wordcraft.Service;
 
 import com.example.wordcraft.DTO.LoginRequestDTO;
 import com.example.wordcraft.DTO.TokenResponseDTO;
-import com.example.wordcraft.DTO.UserDTO;
 import com.example.wordcraft.DTO.UserRegisterDTO;
 import com.example.wordcraft.Entity.Users;
 import com.example.wordcraft.JWT.JwtTokenProvider;
@@ -10,8 +9,6 @@ import com.example.wordcraft.Repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @RequiredArgsConstructor
 @Service

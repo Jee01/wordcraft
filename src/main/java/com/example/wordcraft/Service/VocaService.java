@@ -10,16 +10,12 @@ import com.example.wordcraft.Entity.Vocabularies;
 import com.example.wordcraft.Repository.UserRepository;
 import com.example.wordcraft.Repository.VocaWordsRepository;
 import com.example.wordcraft.Repository.VocabulariesRepository;
-import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -125,7 +121,8 @@ public class VocaService {
     //단어장 수정
     @Transactional
     public void updateVoca(Long id, Map<String, String> voca){
-
+        Vocabularies vocabularies = vocabulariesRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("vocabularies not found"));
     }
 
     //단어장 삭제

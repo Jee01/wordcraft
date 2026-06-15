@@ -6,10 +6,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -31,13 +31,13 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 ) //세션 설정
-                .csrf(csrf -> csrf.disable()) //CSRF 비활성화, JWT 사용해서 불필요
+                .csrf(AbstractHttpConfigurer::disable) //CSRF 비활성화, JWT 사용해서 불필요
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/community").permitAll()
                         // 정적 파일 전체 허용
                         .requestMatchers("/*.html", "/*.css", "/*.js").permitAll()
-                        // API는 인증 필요
+                        // API 인증 필요
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().authenticated()
                 )

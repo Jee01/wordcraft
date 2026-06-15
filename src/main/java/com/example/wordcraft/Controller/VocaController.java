@@ -11,7 +11,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -51,6 +50,7 @@ public class VocaController {
 
     @PutMapping("/{id}")
     public ResponseEntity<VocaResponseDTO> updateVoca(@PathVariable Long id, @RequestBody Map<String, String> voca) {
+        vocaService.updateVoca(id, voca);
         return null;
     }
 
