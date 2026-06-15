@@ -13,6 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +34,7 @@ public class VocaService {
 
         vocabularies.setTitle(vocaCreateRequestDTO.getTitle());
         vocabularies.setTag(vocaCreateRequestDTO.getTag());
-        vocabularies.set_public(vocaCreateRequestDTO.getIsPublic());
+        vocabularies.setPublic(vocaCreateRequestDTO.getIsPublic());
         vocabularies.setUser(user);
 
         Vocabularies saved = vocabulariesRepository.save(vocabularies);
@@ -49,5 +52,19 @@ public class VocaService {
 
             vocaWordsRepository.save(vocaWords);
         });
+    }
+
+    public List<VocaResponseDTO> getVocaList(){
+        List<Vocabularies> vocabulariesIsPublic = vocabulariesRepository.findAllByIsPublic(true);
+
+        return vocabulariesIsPublic.stream()
+                .map(vocab->{
+                    int wordCount = vocaWordsRepository.countByVocabularyId(vocab.getId());
+                    VocaResponseDTO vocaResponseDTO = VocaResponseDTO.from(vocab);
+                    vocaResponseDTO.setWordCount(wordCount);
+                    return vocaResponseDTO;
+                    }
+                )
+                .collect(Collectors.toList());
     }
 }

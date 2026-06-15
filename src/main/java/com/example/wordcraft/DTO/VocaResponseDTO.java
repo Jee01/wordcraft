@@ -1,5 +1,6 @@
 package com.example.wordcraft.DTO;
 
+import com.example.wordcraft.Entity.Vocabularies;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,4 +19,15 @@ public class VocaResponseDTO {
     private Boolean isPublic;
     private LocalDateTime createdAt;
     private Integer wordCount;
+
+    public static VocaResponseDTO from(Vocabularies vocabulary) {
+        return VocaResponseDTO.builder()
+                .id(vocabulary.getId())
+                .userId(vocabulary.getUser().getId())
+                .title(vocabulary.getTitle())
+                .tag(vocabulary.getTag())
+                .isPublic(vocabulary.isPublic())
+                .createdAt(vocabulary.getCreatedAt())
+                .build();
+    }
 }

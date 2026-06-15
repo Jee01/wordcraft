@@ -10,6 +10,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -32,7 +33,8 @@ public class VocaController {
     }
     @GetMapping
     public ResponseEntity<List<VocaResponseDTO>> getVocaList() {
-        return null;
+        List<VocaResponseDTO> vocabularies = vocaService.getVocaList();
+        return ResponseEntity.ok(vocabularies);
     }
 
     @GetMapping("/{id}")

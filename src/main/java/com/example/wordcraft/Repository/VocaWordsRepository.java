@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface VocaWordsRepository extends JpaRepository<VocaWords,Long> {
+    int countByVocabularyId(Long vocabularyId);
 }
