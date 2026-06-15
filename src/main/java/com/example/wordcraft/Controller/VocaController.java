@@ -50,7 +50,7 @@ public class VocaController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<VocaResponseDTO> updateVoca(@PathVariable String id, @RequestBody Map<String, String> voca) {
+    public ResponseEntity<VocaResponseDTO> updateVoca(@PathVariable Long id, @RequestBody Map<String, String> voca) {
         return null;
     }
 

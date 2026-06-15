@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -121,6 +122,13 @@ public class VocaService {
                 .build();
     }
 
+    //단어장 수정
+    @Transactional
+    public void updateVoca(Long id, Map<String, String> voca){
+
+    }
+
+    //단어장 삭제
     @Transactional
     public void deleteVoca(Long id){
         Vocabularies vocabularies = vocabulariesRepository.findById(id)
