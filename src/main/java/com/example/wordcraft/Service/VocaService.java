@@ -54,6 +54,7 @@ public class VocaService {
         });
     }
 
+    //커뮤니티 용
     public List<VocaResponseDTO> getVocaList(){
         List<Vocabularies> vocabulariesIsPublic = vocabulariesRepository.findAllByIsPublic(true);
 
@@ -67,4 +68,23 @@ public class VocaService {
                 )
                 .collect(Collectors.toList());
     }
+
+    //개인 단어장
+    public List<VocaResponseDTO> getVocaListByUserId(String email){
+        Users user = userRepository.findByEmail(email)
+                .orElseThrow(()-> new RuntimeException("not found user"));
+
+        List<Vocabularies> myVocabularies = vocabulariesRepository.findAllByUser(user);
+        return myVocabularies.stream()
+                .map(vocab->{
+                            int wordCount = vocaWordsRepository.countByVocabularyId(vocab.getId());
+                            VocaResponseDTO vocaResponseDTO = VocaResponseDTO.from(vocab);
+                            vocaResponseDTO.setWordCount(wordCount);
+                            return vocaResponseDTO;
+                        }
+                )
+                .collect(Collectors.toList());
+    }
+
+
 }

@@ -36,6 +36,12 @@ public class VocaController {
         List<VocaResponseDTO> vocabularies = vocaService.getVocaList();
         return ResponseEntity.ok(vocabularies);
     }
+    @GetMapping("/my")
+    public ResponseEntity<List<VocaResponseDTO>> getMyVocaList(@AuthenticationPrincipal UserDetails userDetails) {
+        String email = userDetails.getUsername();
+        List<VocaResponseDTO> vocabularies = vocaService.getVocaListByUserId(email);
+        return ResponseEntity.ok(vocabularies);
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, String>> getVocaById(@PathVariable String id) {

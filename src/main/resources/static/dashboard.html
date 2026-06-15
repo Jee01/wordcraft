@@ -238,30 +238,41 @@
         }
       }
 
-      function renderVocabs(vocabs) {
+      /* API 응답(VocaResponseDTO) → 내부 포맷 변환 */
+      function normalize(v) {
+        const tags = v.tag ? v.tag.split(',').map(t => t.trim()).filter(Boolean) : (v.tags || []);
+        const dateStr = v.createdAt ? v.createdAt.substring(0, 10) : (v.updatedAt || '');
+        return { ...v, tags, updatedAt: dateStr };
+      }
+
+      function renderVocabs(raw) {
+        const vocabs = raw.map(normalize);
         if (!vocabs || vocabs.length === 0) {
           grid.innerHTML = newCard() + emptyCards();
           return;
         }
-        document.getElementById('statVocabs').textContent = vocabs.length;
-        const totalWords = vocabs.reduce((s, v) => s + (v.wordCount || 0), 0);
-        document.getElementById('statWords').textContent = totalWords;
-
+        updateStats(vocabs);
         grid.innerHTML = newCard() + vocabs.map(v => vocabCard(v)).join('');
+
+        setTimeout(() => {
+          grid.querySelectorAll('.reveal').forEach((el, i) => {
+            el.style.transitionDelay = `${(i % 6) * 60}ms`;
+            const obs = new IntersectionObserver(
+              entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
+              { threshold: 0.1 }
+            );
+            obs.observe(el);
+          });
+        }, 50);
       }
 
       function renderVocabsFallback() {
-        const sampleVocabs = [
-          { id: 1, title: '비즈니스 필수 동사 100', wordCount: 100, learnedCount: 45, tags: ['TOEIC'], isPublic: true, updatedAt: '2026-06-06' },
-          { id: 2, title: '수능 빈출 형용사', wordCount: 60, learnedCount: 60, tags: ['수능'], isPublic: false, updatedAt: '2026-06-05' },
-          { id: 3, title: '토플 학술 어휘', wordCount: 80, learnedCount: 20, tags: ['TOEFL'], isPublic: false, updatedAt: '2026-06-04' },
-        ];
-        renderVocabs(sampleVocabs);
+        grid.innerHTML = newCard() + emptyCards();
       }
 
       function vocabCard(v) {
         const pct = v.wordCount ? Math.round((v.learnedCount || 0) / v.wordCount * 100) : 0;
-        const tagHtml = (v.tags || []).map(t => `<span class="tag tag--${tagClass(t)}">${t}</span>`).join('');
+        const tagHtml = v.tags.map(t => `<span class="tag tag--${tagClass(t)}">${t}</span>`).join('');
         const badgeClass = v.isPublic ? 'vocab-card__badge--public' : '';
         const badgeLabel = v.isPublic ? '공개' : '비공개';
         return `
@@ -273,7 +284,7 @@
             <div class="vocab-card__tags">${tagHtml}</div>
             <div class="vocab-card__meta">
               <span class="vocab-card__count">📚 ${v.wordCount || 0}단어</span>
-              <span class="vocab-card__date">${v.updatedAt || ''}</span>
+              <span class="vocab-card__date">${v.updatedAt}</span>
             </div>
             <div class="vocab-card__progress">
               <div class="vocab-card__progress-label">

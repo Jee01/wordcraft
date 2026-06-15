@@ -17,6 +17,7 @@ public class VocaResponseDTO {
     private String title;
     private String tag;
     private Boolean isPublic;
+    private String nickname;
     private LocalDateTime createdAt;
     private Integer wordCount;
 
@@ -27,6 +28,7 @@ public class VocaResponseDTO {
                 .title(vocabulary.getTitle())
                 .tag(vocabulary.getTag())
                 .isPublic(vocabulary.isPublic())
+                .nickname(vocabulary.getUser().getNickname())
                 .createdAt(vocabulary.getCreatedAt())
                 .build();
     }

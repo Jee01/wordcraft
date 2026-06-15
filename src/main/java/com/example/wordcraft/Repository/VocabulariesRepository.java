@@ -1,5 +1,6 @@
 package com.example.wordcraft.Repository;
 
+import com.example.wordcraft.Entity.Users;
 import com.example.wordcraft.Entity.Vocabularies;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,4 +13,5 @@ import java.util.List;
 public interface VocabulariesRepository extends JpaRepository<Vocabularies, Long> {
     @Query("SELECT v FROM Vocabularies v WHERE v.isPublic = :isPublic")
     List<Vocabularies> findAllByIsPublic(@Param("isPublic") boolean isPublic);
+    List<Vocabularies> findAllByUser(Users user);
 }
