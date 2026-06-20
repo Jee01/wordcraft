@@ -1,8 +1,8 @@
 package com.example.wordcraft.Controller;
 
-import com.example.wordcraft.DTO.LoginRequestDTO;
-import com.example.wordcraft.DTO.TokenResponseDTO;
-import com.example.wordcraft.DTO.UserRegisterDTO;
+import com.example.wordcraft.DTO.Login.LoginRequestDTO;
+import com.example.wordcraft.DTO.Login.TokenResponseDTO;
+import com.example.wordcraft.DTO.Login.UserRegisterDTO;
 import com.example.wordcraft.Service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;

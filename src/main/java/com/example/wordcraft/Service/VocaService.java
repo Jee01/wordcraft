@@ -1,9 +1,6 @@
 package com.example.wordcraft.Service;
 
-import com.example.wordcraft.DTO.VocaCreateRequestDTO;
-import com.example.wordcraft.DTO.VocaDetailResponseDTO;
-import com.example.wordcraft.DTO.VocaResponseDTO;
-import com.example.wordcraft.DTO.VocaWordRequestDTO;
+import com.example.wordcraft.DTO.Voca.*;
 import com.example.wordcraft.Entity.Users;
 import com.example.wordcraft.Entity.VocaWords;
 import com.example.wordcraft.Entity.Vocabularies;
@@ -119,10 +116,33 @@ public class VocaService {
     }
 
     //단어장 수정
+    //전부 삭제하고 다시 만드는 방식. 추후 처리시간 확인 후 변경 여부 결정.
     @Transactional
-    public void updateVoca(Long id, Map<String, String> voca){
-        Vocabularies vocabularies = vocabulariesRepository.findById(id)
+    public void updateVoca(Long id, VocabUpdateDTO vocabUpdateDTO){
+        Vocabularies updateVocab = vocabulariesRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("vocabularies not found"));
+
+        updateVocab.setTitle(vocabUpdateDTO.getTitle());
+        updateVocab.setCreatedAt(vocabUpdateDTO.getUpdateAt());
+        updateVocab.setTag(vocabUpdateDTO.getTag());
+        updateVocab.setPublic(vocabUpdateDTO.getIsPublic());
+
+        vocaWordsRepository.deleteByVocabularyId(id);
+
+        vocabUpdateDTO.getWords().forEach(wordDTO->{
+            VocaWords vocaWords = VocaWords.builder()
+                    .vocabulary(updateVocab)
+                    .word(wordDTO.getWord())
+                    .ipa(wordDTO.getIpa())
+                    .pos(wordDTO.getPos())
+                    .meanings(wordDTO.getMeanings())
+                    .examples(wordDTO.getExamples())
+                    .memoryTip(wordDTO.getMemoryTip())
+                    .build();
+            vocaWordsRepository.save(vocaWords);
+        });
+
+
     }
 
     //단어장 삭제

@@ -1,8 +1,8 @@
 package com.example.wordcraft.Service;
 
-import com.example.wordcraft.DTO.LoginRequestDTO;
-import com.example.wordcraft.DTO.TokenResponseDTO;
-import com.example.wordcraft.DTO.UserRegisterDTO;
+import com.example.wordcraft.DTO.Login.LoginRequestDTO;
+import com.example.wordcraft.DTO.Login.TokenResponseDTO;
+import com.example.wordcraft.DTO.Login.UserRegisterDTO;
 import com.example.wordcraft.Entity.Users;
 import com.example.wordcraft.JWT.JwtTokenProvider;
 import com.example.wordcraft.Repository.UserRepository;

@@ -1,14 +1,12 @@
-package com.example.wordcraft.DTO;
+package com.example.wordcraft.DTO.Voca;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 import java.util.List;
 
-@Getter
-@Setter
+@Data
 public class VocaCreateRequestDTO {
     @NotBlank(message = "title")
     private String title;

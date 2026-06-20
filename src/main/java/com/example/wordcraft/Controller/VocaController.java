@@ -1,8 +1,9 @@
 package com.example.wordcraft.Controller;
 
-import com.example.wordcraft.DTO.VocaCreateRequestDTO;
-import com.example.wordcraft.DTO.VocaDetailResponseDTO;
-import com.example.wordcraft.DTO.VocaResponseDTO;
+import com.example.wordcraft.DTO.Voca.VocaCreateRequestDTO;
+import com.example.wordcraft.DTO.Voca.VocaDetailResponseDTO;
+import com.example.wordcraft.DTO.Voca.VocaResponseDTO;
+import com.example.wordcraft.DTO.Voca.VocabUpdateDTO;
 import com.example.wordcraft.Service.VocaService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -49,9 +50,11 @@ public class VocaController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<VocaResponseDTO> updateVoca(@PathVariable Long id, @RequestBody Map<String, String> voca) {
-        vocaService.updateVoca(id, voca);
-        return null;
+    public ResponseEntity<Map<String, String>> updateVoca(@PathVariable Long id, @RequestBody VocabUpdateDTO vocabUpdateDTO) {
+        vocaService.updateVoca(id, vocabUpdateDTO);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(Map.of("message", "success updateVocabularies"));
     }
 
     @DeleteMapping("/{id}")

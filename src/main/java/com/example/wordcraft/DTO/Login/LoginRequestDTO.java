@@ -1,12 +1,10 @@
-package com.example.wordcraft.DTO;
+package com.example.wordcraft.DTO.Login;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
 public class LoginRequestDTO {
     @Email(message = "not email form")
     private String email;

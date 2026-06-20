@@ -1,10 +1,8 @@
-package com.example.wordcraft.DTO;
+package com.example.wordcraft.DTO.Login;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
 public class UserDTO {
     private Long id;
 

@@ -1,4 +1,4 @@
-package com.example.wordcraft.DTO;
+package com.example.wordcraft.DTO.Login;
 
 import lombok.Builder;
 import lombok.Getter;
