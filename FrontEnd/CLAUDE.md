@@ -544,3 +544,69 @@ API 실패 시 샘플 단어장 표시 → **빈 상태(새 단어장 만들기 
 **원인:** `wordCard()`가 `.reveal` 클래스를 붙여 카드를 생성하는데, 최초 로드 시 `attachReveal()`을 호출하지 않아 카드가 `opacity: 0` 상태로 유지됨. 필터 변경 이벤트에는 `attachReveal()`이 연결되어 있어 그 시점엔 정상 동작.
 
 **수정:** API 성공 경로와 폴백 경로 양쪽에서 `renderWords()` 직후 `attachReveal()` 호출 추가.
+
+---
+
+## AI 단어 생성 → 단어장 저장 연동 (`vocab-new.html`, 2026-06-22)
+
+### 변경 내용
+
+AI 모드의 **✨ AI로 생성하기** 버튼 클릭 핸들러를 전면 교체.
+
+**변경 전:** 존재하지 않는 `POST /api/vocab/generate` 단일 요청
+**변경 후:** 2단계 요청으로 분리
+
+```
+1단계: POST /api/ai/generate-word   (AI 단어 분석)
+        ↓ WordAnalysisDTO[] 수신
+2단계: POST /api/vocab              (단어장 저장)
+```
+
+### 필드 변환 로직
+
+`WordAnalysisDTO` → `VocaWordRequestDTO` 변환 시 타입 불일치를 프론트에서 처리.
+
+| AI 응답 필드 | 타입 | 변환 방식 | 저장 필드 |
+|---|---|---|---|
+| `meanings` | `List<String>` | `.join(', ')` | `meaning` (String) |
+| `examples` | `List<{en, ko}>` | `"영문 / 한국어"\n` 형식으로 join | `examples` (String) |
+| `word` / `pos` / `ipa` / `memoryTip` | String | 그대로 | 동일 필드명 |
+
+```js
+const convertedWords = aiData.map(w => ({
+  word:      w.word,
+  meaning:   Array.isArray(w.meanings) ? w.meanings.join(', ') : (w.meanings || ''),
+  pos:       w.pos       || null,
+  ipa:       w.ipa       || null,
+  examples:  Array.isArray(w.examples)
+               ? w.examples.map(e => `${e.en} / ${e.ko}`).join('\n')
+               : (w.examples || null),
+  memoryTip: w.memoryTip || null,
+}));
+```
+
+### 요청 헤더
+
+`/api/ai/generate-word`는 JWT 외에 `X-AI-Api-Key` 헤더가 추가로 필요.
+
+```js
+headers: {
+  'Content-Type': 'application/json',
+  'Authorization': 'Bearer ' + token,
+  'X-AI-Api-Key': apiKey,   // localStorage('wc-key-google')에서 읽음
+}
+```
+
+### 제약 사항
+
+- **현재 Gemini(Google)만 지원.** Google 외 provider 선택 시 오류 배너 표시.
+- API Key는 `localStorage('wc-key-google')`에서 읽음. 미설정 시 설정 페이지 안내.
+- 저장 성공 시 `dashboard.html`로 이동 (백엔드 `POST /api/vocab` 응답에 id 없음).
+
+### POST 요청 수정 이력
+
+| 항목 | 변경 전 | 변경 후 |
+|---|---|---|
+| AI 분석 엔드포인트 | `POST /api/vocab/generate` (미존재) | `POST /api/ai/generate-word` |
+| 저장 엔드포인트 | (없음, 위에서 통합 처리) | `POST /api/vocab` |
+| 성공 후 이동 | `vocab.html?id={data.id}` | `dashboard.html` |
