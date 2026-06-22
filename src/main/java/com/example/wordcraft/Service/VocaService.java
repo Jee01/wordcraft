@@ -28,28 +28,30 @@ public class VocaService {
         Users user = userRepository.findByEmail(email)
                 .orElseThrow(()-> new RuntimeException("not found user"));
 
-        Vocabularies vocabularies = new Vocabularies();
 
-        vocabularies.setTitle(vocaCreateRequestDTO.getTitle());
-        vocabularies.setTag(vocaCreateRequestDTO.getTag());
-        vocabularies.setPublic(vocaCreateRequestDTO.getIsPublic());
-        vocabularies.setUser(user);
+
+        Vocabularies vocabularies = Vocabularies.builder()
+                .title(vocaCreateRequestDTO.getTitle())
+                .tag(vocaCreateRequestDTO.getTag())
+                .isPublic(vocaCreateRequestDTO.getIsPublic())
+                .user(user)
+                .build();
 
         Vocabularies saved = vocabulariesRepository.save(vocabularies);
 
-        vocaCreateRequestDTO.getWords().forEach(wordDTO ->{
-            VocaWords vocaWords = VocaWords.builder()
-                    .vocabulary(saved)
-                    .word(wordDTO.getWord())
-                    .meanings(wordDTO.getMeaning())
-                    .pos(wordDTO.getPos())
-                    .ipa(wordDTO.getIpa())
-                    .examples(wordDTO.getExamples())
-                    .memoryTip(wordDTO.getMemoryTip())
-                    .build();
+        List<VocaWords> vocaWordsList = vocaCreateRequestDTO.getWords().stream()
+                .map(wordDTO -> VocaWords.builder()
+                        .vocabulary(saved)
+                        .word(wordDTO.getWord())
+                        .meanings(wordDTO.getMeaning())
+                        .pos(wordDTO.getPos())
+                        .ipa(wordDTO.getIpa())
+                        .examples(wordDTO.getExamples())
+                        .memoryTip(wordDTO.getMemoryTip())
+                        .build())
+                .toList();
 
-            vocaWordsRepository.save(vocaWords);
-        });
+        vocaWordsRepository.saveAll(vocaWordsList);
     }
 
     //커뮤니티 용
@@ -107,7 +109,7 @@ public class VocaService {
         return VocaDetailResponseDTO.builder()
                 .id(vocabularies.getId())
                 .title(vocabularies.getTitle())
-                .isPublic(vocabularies.isPublic())
+                .isPublic(vocabularies.getIsPublic())
                 .wordCount(vocaWords.size())
                 .updatedAt(vocabularies.getCreatedAt().toString().substring(0, 10))
                 .author(vocabularies.getUser().getNickname())
@@ -122,10 +124,11 @@ public class VocaService {
         Vocabularies updateVocab = vocabulariesRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("vocabularies not found"));
 
+
         updateVocab.setTitle(vocabUpdateDTO.getTitle());
         updateVocab.setCreatedAt(vocabUpdateDTO.getUpdateAt());
         updateVocab.setTag(vocabUpdateDTO.getTag());
-        updateVocab.setPublic(vocabUpdateDTO.getIsPublic());
+        updateVocab.setIsPublic(vocabUpdateDTO.getIsPublic());
 
         vocaWordsRepository.deleteByVocabularyId(id);
 

@@ -30,7 +30,7 @@ public class Vocabularies {
     private String tag;
 
     @Column(nullable = false) //비공개 여부
-    private boolean isPublic;
+    private Boolean isPublic;
 
     @Column(nullable = false) //작성 시간
     private LocalDateTime createdAt;

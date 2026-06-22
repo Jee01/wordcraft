@@ -565,36 +565,68 @@ elaborate"></textarea>
       const title = document.getElementById('vocabTitle').value.trim();
       const words = getAiWords();
 
-      if (!title)              { showBanner('aiBannerErr', '단어장 제목을 입력해주세요.'); return; }
-      if (words.length === 0)  { showBanner('aiBannerErr', '단어를 하나 이상 입력해주세요.'); return; }
+      if (!title)                  { showBanner('aiBannerErr', '단어장 제목을 입력해주세요.'); return; }
+      if (words.length === 0)      { showBanner('aiBannerErr', '단어를 하나 이상 입력해주세요.'); return; }
       if (selectedTags.size === 0) { showBanner('aiBannerErr', '태그를 하나 이상 선택해주세요.'); return; }
+      if (selectedProvider !== 'google') { showBanner('aiBannerErr', '현재 Gemini(Google)만 지원합니다. Google을 선택해주세요.'); return; }
 
-      const keyMap = { anthropic: 'wc-key-anthropic', openai: 'wc-key-openai', google: 'wc-key-google' };
-      const apiKey = localStorage.getItem(keyMap[selectedProvider]);
+      const apiKey = localStorage.getItem('wc-key-google');
+      if (!apiKey) { showBanner('aiBannerErr', 'Gemini API Key가 설정되지 않았습니다. 설정 페이지에서 먼저 입력해주세요.'); return; }
 
       generateBtn.disabled = true;
       generateBtn.textContent = '생성 중...';
       genProgress.classList.add('active');
 
       try {
-        const res = await fetch('/api/vocab/generate', {
+        /* ── 1단계: AI 단어 분석 ── */
+        const aiRes = await fetch('/api/ai/generate-word', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+            'X-AI-Api-Key': apiKey,
+          },
           body: JSON.stringify({
-            title,
-            description: document.getElementById('vocabDesc').value.trim(),
-            isPublic: document.querySelector('input[name="visibility"]:checked').value === 'public',
-            tags: [...selectedTags],
             words,
-            aiProvider: selectedProvider,
-            apiKey: apiKey || undefined,
+            tag: [...selectedTags].join(','),
           }),
         });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.message || '생성에 실패했습니다.');
+        const aiData = await aiRes.json().catch(() => null);
+        if (!aiRes.ok) throw new Error((aiData && aiData.message) || 'AI 분석에 실패했습니다.');
+        if (!Array.isArray(aiData) || aiData.length === 0) throw new Error('AI가 단어를 분석하지 못했습니다.');
 
-        showBanner('aiBannerOk', `✅ 단어장이 생성되었습니다! (${data.wordCount || words.length}개 단어)`);
-        setTimeout(() => { window.location.href = `vocab.html?id=${data.id}`; }, 1200);
+        /* ── 2단계: 응답 변환 후 단어장 저장 ── */
+        // WordAnalysisDTO → VocaWordRequestDTO 변환
+        // meanings: List<String> → meaning: String (콤마 구분)
+        // examples: List<{en, ko}> → examples: String (줄바꿈 구분)
+        const convertedWords = aiData.map(w => ({
+          word:      w.word,
+          meaning:   Array.isArray(w.meanings) ? w.meanings.join(', ') : (w.meanings || ''),
+          pos:       w.pos       || null,
+          ipa:       w.ipa       || null,
+          examples:  Array.isArray(w.examples)
+                       ? w.examples.map(e => `${e.en} / ${e.ko}`).join('\n')
+                       : (w.examples || null),
+          memoryTip: w.memoryTip || null,
+        }));
+
+        const payload = {
+          title,
+          tag:      [...selectedTags].join(','),
+          isPublic: document.querySelector('input[name="visibility"]:checked').value === 'public',
+          words:    convertedWords,
+        };
+
+        const vocaRes = await fetch('/api/vocab', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify(payload),
+        });
+        const vocaData = await vocaRes.json().catch(() => ({}));
+        if (!vocaRes.ok) throw new Error(vocaData.message || '단어장 저장에 실패했습니다.');
+
+        showBanner('aiBannerOk', `✅ 단어장이 생성되었습니다! (${convertedWords.length}개 단어)`);
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
       } catch (err) {
         showBanner('aiBannerErr', err.message || '서버와 통신할 수 없습니다.');
       } finally {

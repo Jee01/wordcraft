@@ -23,7 +23,7 @@ public class VocaResponseDTO {
                 .userId(vocabulary.getUser().getId())
                 .title(vocabulary.getTitle())
                 .tag(vocabulary.getTag())
-                .isPublic(vocabulary.isPublic())
+                .isPublic(vocabulary.getIsPublic())
                 .nickname(vocabulary.getUser().getNickname())
                 .createdAt(vocabulary.getCreatedAt())
                 .build();
