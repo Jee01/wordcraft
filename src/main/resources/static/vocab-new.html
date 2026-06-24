@@ -581,8 +581,8 @@ elaborate"></textarea>
       genProgress.classList.add('active');
 
       try {
-        const words = getAiWords();
-        if (words.length === 0) { showBanner('aiBannerErr', '단어를 하나 이상 입력해주세요.'); return; }
+        const text = wordInput.value.trim();
+        if (!text) { showBanner('aiBannerErr', '단어를 하나 이상 입력해주세요.'); return; }
 
         const aiRes = await fetch('/api/ai/generate-word', {
           method: 'POST',
@@ -591,7 +591,7 @@ elaborate"></textarea>
             'Authorization': 'Bearer ' + token,
             'X-AI-Api-Key': apiKey,
           },
-          body: JSON.stringify({ words, tag: [...selectedTags].join(',') }),
+          body: JSON.stringify({ text, tag: [...selectedTags].join(',') }),
         });
         const aiData = await aiRes.json().catch(() => null);
         if (!aiRes.ok) throw new Error((aiData && aiData.message) || 'AI 분석에 실패했습니다.');

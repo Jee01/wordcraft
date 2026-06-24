@@ -26,13 +26,13 @@ public class GeminiService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public List<WordAnalysisDTO> analyzeWords(String apiKey, List<String> words, String tag) {
-        if (words == null || words.isEmpty()) {
-            throw new IllegalArgumentException("단어 목록이 비어 있습니다.");
+    public List<WordAnalysisDTO> analyzeWords(String apiKey, String text, String tag) {
+        if (text == null || text.isEmpty()) {
+            throw new IllegalArgumentException("empty text");
         }
         String url = API_URL + "?key=" + apiKey;
 
-        String prompt = buildPrompt(words, tag);
+        String prompt = buildPrompt(text, tag);
 
         Map<String, Object> textPart = Map.of("text", prompt);
         Map<String, Object> content = Map.of("parts", List.of(textPart));
@@ -48,8 +48,7 @@ public class GeminiService {
         return parseResponse(response.getBody());
     }
 
-    private String buildPrompt(List<String> words, String tag) {
-        String wordList = String.join(", ", words);
+    private String buildPrompt(String text, String tag) {
         return """
                 아래 단어들을 "%s" 맥락에서 각각 분석하여 JSON 배열 형식으로만 응답하세요.
                 마크다운 코드블록, 설명 텍스트 없이 JSON 배열만 출력하세요.
@@ -67,7 +66,7 @@ public class GeminiService {
                     "memoryTip": "기억에 도움이 되는 어원이나 연상법"
                   }
                 ]
-                """.formatted(tag, wordList);
+                """.formatted(tag, text);
     }
 
     private List<WordAnalysisDTO> parseResponse(String raw) {

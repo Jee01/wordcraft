@@ -363,50 +363,98 @@ The company implemented a significant policy change...
         const title = document.getElementById('importTitle').value.trim();
         if (!title) { showError('단어장 제목을 입력해주세요.'); return; }
 
-        let body, contentType;
-
         if (activeTab === 'text') {
           const text = document.getElementById('textInput').value.trim();
           if (!text) { showError('변환할 텍스트를 입력해주세요.'); return; }
-          body = JSON.stringify({ title, tags: [...selectedTags], text, maxWords: Number(document.getElementById('maxWords').value) });
-          contentType = 'application/json';
+
+          const apiKey = localStorage.getItem('wc-key-google');
+          if (!apiKey) { showError('Gemini API Key가 설정되지 않았습니다. 설정 페이지에서 먼저 입력해주세요.'); return; }
+
+          importBtn.disabled = true; importBtn.textContent = '변환 중...';
+          genProgress.classList.add('active');
+          apiError.style.display = 'none'; apiSuccess.style.display = 'none';
+
+          try {
+            const tag = [...selectedTags].join(',');
+
+            const aiRes = await fetch('/api/ai/generate-word', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token,
+                'X-AI-Api-Key': apiKey,
+              },
+              body: JSON.stringify({ text, tag }),
+            });
+            const aiData = await aiRes.json().catch(() => null);
+            if (!aiRes.ok) throw new Error((aiData && aiData.message) || 'AI 분석에 실패했습니다.');
+            if (!Array.isArray(aiData) || aiData.length === 0) throw new Error('AI가 단어를 분석하지 못했습니다.');
+
+            const convertedWords = aiData.map(w => ({
+              word:      w.word,
+              meaning:   Array.isArray(w.meanings) ? w.meanings.join(', ') : (w.meanings || ''),
+              pos:       w.pos       || null,
+              ipa:       w.ipa       || null,
+              examples:  Array.isArray(w.examples) ? w.examples.map(e => `${e.en} / ${e.ko}`).join('\n') : (w.examples || null),
+              memoryTip: w.memoryTip || null,
+            }));
+
+            const vocaRes = await fetch('/api/vocab', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+              body: JSON.stringify({ title, tag, isPublic: false, words: convertedWords }),
+            });
+            const vocaData = await vocaRes.json().catch(() => ({}));
+            if (!vocaRes.ok) throw new Error(vocaData.message || '단어장 저장에 실패했습니다.');
+
+            showPreview(convertedWords);
+            apiSuccess.style.display = 'block';
+            apiSuccess.textContent = `✅ ${convertedWords.length}개 단어가 추출되었습니다! 단어장으로 이동합니다...`;
+            setTimeout(() => { window.location.href = `vocab.html?id=${vocaData.id}`; }, 1500);
+          } catch (err) {
+            showError(err.message || '서버와 통신할 수 없습니다.');
+            showPreview(['implement', 'significant', 'constitute', 'elaborate', 'paradigm']);
+          } finally {
+            importBtn.disabled = false; importBtn.textContent = '📥 AI로 변환하기';
+            genProgress.classList.remove('active');
+          }
+
         } else {
           const fileInput = document.getElementById(activeTab === 'image' ? 'imageFile' : 'docFile');
           const file = fileInput.files[0];
           if (!file) { showError('파일을 선택해주세요.'); return; }
+
           const fd = new FormData();
           fd.append('file', file);
           fd.append('title', title);
           fd.append('tags', JSON.stringify([...selectedTags]));
           fd.append('maxWords', document.getElementById('maxWords').value);
-          body = fd;
-        }
 
-        importBtn.disabled = true; importBtn.textContent = '변환 중...';
-        genProgress.classList.add('active');
-        apiError.style.display = 'none'; apiSuccess.style.display = 'none';
+          importBtn.disabled = true; importBtn.textContent = '변환 중...';
+          genProgress.classList.add('active');
+          apiError.style.display = 'none'; apiSuccess.style.display = 'none';
 
-        try {
-          const endpoint = activeTab === 'text' ? '/api/vocab/import/text'
-            : activeTab === 'image' ? '/api/vocab/import/image' : '/api/vocab/import/file';
-          const headers = { Authorization: 'Bearer ' + token };
-          if (contentType) headers['Content-Type'] = contentType;
+          try {
+            const endpoint = activeTab === 'image' ? '/api/vocab/import/image' : '/api/vocab/import/file';
+            const res = await fetch(endpoint, {
+              method: 'POST',
+              headers: { Authorization: 'Bearer ' + token },
+              body: fd,
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || '변환에 실패했습니다.');
 
-          const res = await fetch(endpoint, { method: 'POST', headers, body });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.message || '변환에 실패했습니다.');
-
-          showPreview(data.words || []);
-          apiSuccess.style.display = 'block';
-          apiSuccess.textContent = `✅ ${data.wordCount || 0}개 단어가 추출되었습니다! 단어장으로 이동합니다...`;
-          setTimeout(() => { window.location.href = `vocab.html?id=${data.id}`; }, 1500);
-        } catch (err) {
-          showError(err.message || '서버와 통신할 수 없습니다.');
-          /* Show demo preview on error */
-          showPreview(['implement', 'significant', 'constitute', 'elaborate', 'paradigm']);
-        } finally {
-          importBtn.disabled = false; importBtn.textContent = '📥 AI로 변환하기';
-          genProgress.classList.remove('active');
+            showPreview(data.words || []);
+            apiSuccess.style.display = 'block';
+            apiSuccess.textContent = `✅ ${data.wordCount || 0}개 단어가 추출되었습니다! 단어장으로 이동합니다...`;
+            setTimeout(() => { window.location.href = `vocab.html?id=${data.id}`; }, 1500);
+          } catch (err) {
+            showError(err.message || '서버와 통신할 수 없습니다.');
+            showPreview(['implement', 'significant', 'constitute', 'elaborate', 'paradigm']);
+          } finally {
+            importBtn.disabled = false; importBtn.textContent = '📥 AI로 변환하기';
+            genProgress.classList.remove('active');
+          }
         }
       });
 

@@ -24,7 +24,7 @@ public class AIController {
             @RequestBody GenerateWordRequestDTO request
     ) {
         List<WordAnalysisDTO> result = geminiService.analyzeWords(
-                apiKey, request.getWords(), request.getTag()
+                apiKey, request.getText(), request.getTag()
         );
         return ResponseEntity.ok(result);
     }

@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Builder
 public class VocaResponseDTO {
     private Long id;
+    private Long originId;
     private Long userId;
     private String title;
     private String tag;
@@ -20,6 +21,7 @@ public class VocaResponseDTO {
     public static VocaResponseDTO from(Vocabularies vocabulary) {
         return VocaResponseDTO.builder()
                 .id(vocabulary.getId())
+                .originId(vocabulary.getOriginId())
                 .userId(vocabulary.getUser().getId())
                 .title(vocabulary.getTitle())
                 .tag(vocabulary.getTag())
