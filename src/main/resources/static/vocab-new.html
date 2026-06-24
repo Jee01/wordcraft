@@ -65,46 +65,6 @@
     .tag-chip:hover { border-color: var(--accent); color: var(--accent-2); }
     .tag-chip.selected { border-color: var(--accent); color: var(--accent-2); background: var(--accent-dim); }
 
-    /* ── AI mode: input mode sub-toggle ── */
-    .input-mode-toggle {
-      display: inline-flex; background: var(--bg); border: 1.5px solid var(--border);
-      border-radius: 10px; padding: 3px; gap: 3px; margin-bottom: 16px;
-    }
-    .input-mode-btn {
-      padding: 6px 16px; border-radius: 7px; border: none;
-      font-size: 0.82rem; font-weight: 700; font-family: var(--font);
-      cursor: pointer; transition: all .2s; background: none; color: var(--text-2);
-    }
-    .input-mode-btn.active { background: var(--bg-3); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.2); }
-    .input-mode-btn:not(.active):hover { color: var(--text); }
-
-    /* ── File drop zone ── */
-    .file-drop-zone {
-      border: 2px dashed var(--border-2); border-radius: var(--radius-lg);
-      padding: 36px 20px; text-align: center; cursor: pointer;
-      transition: border-color .2s, background .2s; background: var(--bg-4);
-    }
-    .file-drop-zone:hover, .file-drop-zone.drag-over {
-      border-color: var(--accent); background: var(--accent-dim);
-    }
-    .file-drop-zone__icon { font-size: 2.2rem; margin-bottom: 10px; }
-    .file-drop-zone__label { font-size: 0.88rem; color: var(--text-2); margin-bottom: 6px; }
-    .file-drop-zone__hint  { font-size: 0.75rem; color: var(--text-3); }
-    .file-drop-zone input[type="file"] { display: none; }
-    .file-selected {
-      display: none; align-items: center; gap: 10px;
-      padding: 10px 14px; background: var(--bg-4); border-radius: var(--radius);
-      border: 1.5px solid var(--accent); margin-top: 10px; font-size: 0.85rem;
-    }
-    .file-selected.show { display: flex; }
-    .file-selected__name { flex: 1; color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .file-selected__size { color: var(--text-3); font-size: 0.75rem; flex-shrink: 0; }
-    .file-selected__remove {
-      background: none; border: none; cursor: pointer; color: var(--text-3);
-      font-size: 1rem; padding: 0 4px; line-height: 1;
-    }
-    .file-selected__remove:hover { color: #e55; }
-
     /* ── AI mode: word preview ── */
     .word-preview { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
     .word-preview-item {
@@ -342,12 +302,6 @@
             <div class="form-card" id="aiWordSection">
               <div class="form-card__title">📝 단어 입력</div>
 
-              <!-- 입력 방식 서브 토글 -->
-              <div class="input-mode-toggle">
-                <button class="input-mode-btn active" id="inputModeTextBtn">✏️ 텍스트 입력</button>
-                <button class="input-mode-btn" id="inputModeFileBtn">📎 파일 업로드</button>
-              </div>
-
               <!-- 텍스트 입력 영역 -->
               <div id="textInputArea">
                 <div class="form-group">
@@ -368,21 +322,6 @@ elaborate"></textarea>
                 </div>
               </div>
 
-              <!-- 파일 업로드 영역 -->
-              <div id="fileInputArea" style="display:none;">
-                <div class="file-drop-zone" id="fileDropZone">
-                  <input type="file" id="fileInput" accept="image/*,application/pdf" />
-                  <div class="file-drop-zone__icon">📄</div>
-                  <div class="file-drop-zone__label">이미지 또는 PDF를 드래그하거나 클릭하여 업로드</div>
-                  <div class="file-drop-zone__hint">지원 형식: JPG, PNG, GIF, WEBP, PDF · 최대 20MB</div>
-                </div>
-                <div class="file-selected" id="fileSelected">
-                  <span class="file-selected__name" id="fileSelectedName"></span>
-                  <span class="file-selected__size" id="fileSelectedSize"></span>
-                  <button class="file-selected__remove" id="fileRemoveBtn" title="파일 제거">✕</button>
-                </div>
-                <div class="form-hint" style="margin-top:10px;">파일에서 영어 단어를 자동으로 추출하여 분석합니다.</div>
-              </div>
             </div>
 
             <!-- [AI 전용] AI 모델 선택 -->
@@ -595,59 +534,6 @@ elaborate"></textarea>
     }
     checkApiKey();
 
-    /* ── AI 입력 방식 서브 토글 ── */
-    let aiInputMode = 'text'; // 'text' | 'file'
-    let selectedFile = null;
-
-    const inputModeTextBtn = document.getElementById('inputModeTextBtn');
-    const inputModeFileBtn = document.getElementById('inputModeFileBtn');
-    const textInputArea    = document.getElementById('textInputArea');
-    const fileInputArea    = document.getElementById('fileInputArea');
-
-    function switchAiInputMode(mode) {
-      aiInputMode = mode;
-      inputModeTextBtn.classList.toggle('active', mode === 'text');
-      inputModeFileBtn.classList.toggle('active', mode === 'file');
-      textInputArea.style.display = mode === 'text' ? '' : 'none';
-      fileInputArea.style.display = mode === 'file' ? '' : 'none';
-    }
-
-    inputModeTextBtn.addEventListener('click', () => switchAiInputMode('text'));
-    inputModeFileBtn.addEventListener('click', () => switchAiInputMode('file'));
-
-    /* ── 파일 드롭존 ── */
-    const fileDropZone     = document.getElementById('fileDropZone');
-    const fileInput        = document.getElementById('fileInput');
-    const fileSelected     = document.getElementById('fileSelected');
-    const fileSelectedName = document.getElementById('fileSelectedName');
-    const fileSelectedSize = document.getElementById('fileSelectedSize');
-    const fileRemoveBtn    = document.getElementById('fileRemoveBtn');
-
-    fileDropZone.addEventListener('click', () => fileInput.click());
-    fileDropZone.addEventListener('dragover', e => { e.preventDefault(); fileDropZone.classList.add('drag-over'); });
-    fileDropZone.addEventListener('dragleave', () => fileDropZone.classList.remove('drag-over'));
-    fileDropZone.addEventListener('drop', e => {
-      e.preventDefault();
-      fileDropZone.classList.remove('drag-over');
-      const f = e.dataTransfer.files[0];
-      if (f) applyFile(f);
-    });
-    fileInput.addEventListener('change', () => {
-      if (fileInput.files[0]) applyFile(fileInput.files[0]);
-    });
-    fileRemoveBtn.addEventListener('click', () => {
-      selectedFile = null;
-      fileInput.value = '';
-      fileSelected.classList.remove('show');
-    });
-
-    function applyFile(f) {
-      selectedFile = f;
-      fileSelectedName.textContent = f.name;
-      fileSelectedSize.textContent = (f.size / 1024 / 1024).toFixed(2) + ' MB';
-      fileSelected.classList.add('show');
-    }
-
     /* AI 단어 카운트 & 미리보기 */
     const wordInput = document.getElementById('wordInput');
     function getAiWords() {
@@ -695,44 +581,20 @@ elaborate"></textarea>
       genProgress.classList.add('active');
 
       try {
-        let aiData;
+        const words = getAiWords();
+        if (words.length === 0) { showBanner('aiBannerErr', '단어를 하나 이상 입력해주세요.'); return; }
 
-        if (aiInputMode === 'text') {
-          /* ── 텍스트 모드: JSON POST ── */
-          const words = getAiWords();
-          if (words.length === 0) { showBanner('aiBannerErr', '단어를 하나 이상 입력해주세요.'); return; }
-
-          const aiRes = await fetch('/api/ai/generate-word', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + token,
-              'X-AI-Api-Key': apiKey,
-            },
-            body: JSON.stringify({ words, tag: [...selectedTags].join(',') }),
-          });
-          aiData = await aiRes.json().catch(() => null);
-          if (!aiRes.ok) throw new Error((aiData && aiData.message) || 'AI 분석에 실패했습니다.');
-
-        } else {
-          /* ── 파일 모드: multipart POST ── */
-          if (!selectedFile) { showBanner('aiBannerErr', '파일을 먼저 업로드해주세요.'); return; }
-
-          const formData = new FormData();
-          formData.append('file', selectedFile);
-          formData.append('tag', [...selectedTags].join(','));
-
-          const aiRes = await fetch('/api/ai/analyze-file', {
-            method: 'POST',
-            headers: {
-              'Authorization': 'Bearer ' + token,
-              'X-AI-Api-Key': apiKey,
-            },
-            body: formData,
-          });
-          aiData = await aiRes.json().catch(() => null);
-          if (!aiRes.ok) throw new Error((aiData && aiData.message) || '파일 분석에 실패했습니다.');
-        }
+        const aiRes = await fetch('/api/ai/generate-word', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+            'X-AI-Api-Key': apiKey,
+          },
+          body: JSON.stringify({ words, tag: [...selectedTags].join(',') }),
+        });
+        const aiData = await aiRes.json().catch(() => null);
+        if (!aiRes.ok) throw new Error((aiData && aiData.message) || 'AI 분석에 실패했습니다.');
 
         if (!Array.isArray(aiData) || aiData.length === 0) throw new Error('AI가 단어를 분석하지 못했습니다.');
 

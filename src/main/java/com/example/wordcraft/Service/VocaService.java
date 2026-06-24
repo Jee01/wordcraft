@@ -7,6 +7,7 @@ import com.example.wordcraft.Entity.Vocabularies;
 import com.example.wordcraft.Repository.UserRepository;
 import com.example.wordcraft.Repository.VocaWordsRepository;
 import com.example.wordcraft.Repository.VocabulariesRepository;
+import jakarta.validation.constraints.Null;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,9 +29,8 @@ public class VocaService {
         Users user = userRepository.findByEmail(email)
                 .orElseThrow(()-> new RuntimeException("not found user"));
 
-
-
         Vocabularies vocabularies = Vocabularies.builder()
+                .originId(null)
                 .title(vocaCreateRequestDTO.getTitle())
                 .tag(vocaCreateRequestDTO.getTag())
                 .isPublic(vocaCreateRequestDTO.getIsPublic())
@@ -54,7 +54,7 @@ public class VocaService {
         vocaWordsRepository.saveAll(vocaWordsList);
     }
 
-    //커뮤니티 용
+    //커뮤니티 용 (이후 옮겨야 할듯)
     public List<VocaResponseDTO> getVocaList(){
         List<Vocabularies> vocabulariesIsPublic = vocabulariesRepository.findAllByIsPublic(true);
 

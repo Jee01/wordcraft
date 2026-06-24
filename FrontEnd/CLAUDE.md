@@ -610,3 +610,35 @@ headers: {
 | AI 분석 엔드포인트 | `POST /api/vocab/generate` (미존재) | `POST /api/ai/generate-word` |
 | 저장 엔드포인트 | (없음, 위에서 통합 처리) | `POST /api/vocab` |
 | 성공 후 이동 | `vocab.html?id={data.id}` | `dashboard.html` |
+
+---
+
+## AI 단어 입력 파일 모드 제거 (`vocab-new.html`, 2026-06-24)
+
+### 변경 내용
+
+AI 모드의 단어 입력 방식에서 **📎 파일 업로드 모드를 제거**하고, **✏️ 텍스트 입력만 남김.**
+
+**제거된 요소:**
+
+| 구분 | 제거 항목 |
+|---|---|
+| CSS | `.input-mode-toggle`, `.input-mode-btn`, `.file-drop-zone*`, `.file-selected*` 스타일 전체 |
+| HTML | 서브 토글 버튼 (`✏️ 텍스트 입력` / `📎 파일 업로드`), `#fileInputArea` 드롭존 영역 |
+| JS | `aiInputMode` 변수, `switchAiInputMode()` 함수, 파일 드롭존 이벤트 핸들러 일체, generate 핸들러의 파일 분기 (`/api/ai/analyze-file` 호출 포함) |
+
+**변경 후 AI 모드 단어 입력 흐름:**
+
+```
+textarea (#wordInput) 에 단어 줄 단위 입력
+    ↓
+✨ AI로 생성하기 클릭
+    ↓
+POST /api/ai/generate-word  (JSON, X-AI-Api-Key 헤더 포함)
+    ↓
+POST /api/vocab  (단어장 저장)
+    ↓
+dashboard.html 이동
+```
+
+> **배경:** vocab-import에 이미 가져오기 기능이 구현되어 있어 불필요.

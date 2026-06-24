@@ -6,6 +6,7 @@ import com.example.wordcraft.DTO.Voca.VocaResponseDTO;
 import com.example.wordcraft.DTO.Voca.VocabUpdateDTO;
 import com.example.wordcraft.Service.VocaService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,12 +18,9 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/vocab")
+@RequiredArgsConstructor
 public class VocaController {
     private final VocaService vocaService;
-
-    public VocaController(VocaService vocaService) {
-        this.vocaService = vocaService;
-    }
 
     @PostMapping
     public ResponseEntity<Map<String, String>> createVoca(@Valid @RequestBody VocaCreateRequestDTO vocaCreateRequestDTO

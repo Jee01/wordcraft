@@ -1,6 +1,7 @@
 package com.example.wordcraft.Service;
 
 import com.example.wordcraft.DTO.AI.WordAnalysisDTO;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
