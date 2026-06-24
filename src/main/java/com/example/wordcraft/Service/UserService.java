@@ -1,8 +1,6 @@
 package com.example.wordcraft.Service;
 
-import com.example.wordcraft.DTO.Login.LoginRequestDTO;
-import com.example.wordcraft.DTO.Login.TokenResponseDTO;
-import com.example.wordcraft.DTO.Login.UserRegisterDTO;
+import com.example.wordcraft.DTO.Login.*;
 import com.example.wordcraft.Entity.Users;
 import com.example.wordcraft.JWT.JwtTokenProvider;
 import com.example.wordcraft.Repository.UserRepository;
@@ -50,6 +48,33 @@ public class UserService {
                 .refreshToken(refreshToken)
                 .build();
     }
-    /*회원 수정*/
+    /*회원 비밀번호 수정*/
+    public void updateUserPassword(String email, UserPasswordUpdateDTO userPasswordUpdateDTO){
+        Users users = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("email not found"));
+
+        if(!passwordEncoder.matches(userPasswordUpdateDTO.getPassword(), users.getPassword())) {
+            throw new IllegalStateException("wrong password");
+        }
+
+        users.setPassword(passwordEncoder.encode(userPasswordUpdateDTO.getUpdatePassword()));
+        userRepository.save(users);
+    }
+
+    public void updateUserNickname(String email, UserNicknameUpdateDTO userNicknameUpdateDTO) {
+        Users users = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("email not found"));
+        users.setNickname(userNicknameUpdateDTO.getUpdateNickname());
+        userRepository.save(users);
+    }
+
     /*회원 삭제*/
+    public void deleteUser(String email, UserDeleteDTO userDeleteDTO) {
+        Users users = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("email not found"));
+        if(!passwordEncoder.matches(userDeleteDTO.getPassword(), users.getPassword())) {
+            throw new IllegalStateException("wrong password");
+        }
+        userRepository.delete(users);
+    }
 }

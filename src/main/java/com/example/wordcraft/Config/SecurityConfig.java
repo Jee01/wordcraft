@@ -33,7 +33,7 @@ public class SecurityConfig {
                 ) //세션 설정
                 .csrf(AbstractHttpConfigurer::disable) //CSRF 비활성화, JWT 사용해서 불필요
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers("/api/community").permitAll()
                         // 정적 파일 전체 허용
                         .requestMatchers("/*.html", "/*.css", "/*.js").permitAll()

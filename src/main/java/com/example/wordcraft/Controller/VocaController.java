@@ -4,7 +4,6 @@ import com.example.wordcraft.DTO.Voca.VocaCreateRequestDTO;
 import com.example.wordcraft.DTO.Voca.VocaDetailResponseDTO;
 import com.example.wordcraft.DTO.Voca.VocaResponseDTO;
 import com.example.wordcraft.DTO.Voca.VocabUpdateDTO;
-import com.example.wordcraft.Service.UserService;
 import com.example.wordcraft.Service.VocaService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -20,10 +19,9 @@ import java.util.Map;
 @RequestMapping("/api/vocab")
 public class VocaController {
     private final VocaService vocaService;
-    private final UserService userService;
 
-    public VocaController(VocaService vocaService, UserService userService) {this.vocaService = vocaService;
-        this.userService = userService;
+    public VocaController(VocaService vocaService) {
+        this.vocaService = vocaService;
     }
 
     @PostMapping
