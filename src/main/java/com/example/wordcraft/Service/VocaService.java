@@ -75,7 +75,7 @@ public class VocaService {
     @Transactional
     public VocaDetailResponseDTO getVocaDetail(String email, Long id){
         Vocabularies vocabularies = getVocabularies(id);
-        if(!Objects.equals(vocabularies.getUser().getEmail(), email) && Objects.equals(vocabularies.getIsPublic(),false)){
+        if(!Objects.equals(vocabularies.getUser().getEmail(), email)){
             throw new RuntimeException("user's match error or private vocab"); //이후 예외 처리 대시보드로 보내도록 변경
         }
         List<VocaWords> vocaWords = vocaWordsRepository.findByVocabularyId(vocabularies.getId());

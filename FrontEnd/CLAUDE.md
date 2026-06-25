@@ -642,3 +642,80 @@ dashboard.html 이동
 ```
 
 > **배경:** vocab-import에 이미 가져오기 기능이 구현되어 있어 불필요.
+
+---
+
+## 커뮤니티 공개 단어장 조회 엔드포인트 이전 (`community.html`, 2026-06-25)
+
+### 배경
+
+공개 단어장 목록 조회 및 복사 로직이 `VocaController` / `VocaService`에서 `CommunityController` / `CommunityService`로 이전됨.
+
+### 엔드포인트 변경
+
+| 기능 | 변경 전 | 변경 후 |
+|---|---|---|
+| 공개 단어장 목록 조회 | `GET /api/vocab` | `GET /api/community` |
+| 단어장 복사 | `POST /api/community/vocabs/{id}/copy` | `POST /api/community/{id}/copy` |
+| 좋아요 토글 | `POST/DELETE /api/community/vocabs/{id}/like` | `POST/DELETE /api/community/{id}/like` |
+
+### 복사 버튼 동작 변경 (`static/community.html`)
+
+기존 `copyVocab()`은 API 호출 없이 바로 `vocab.html?id=...`으로 이동하는 더미 구현이었음.
+실제 `POST /api/community/{id}/copy` 를 호출하는 비동기 함수로 교체.
+
+```
+복사하기 클릭
+    ↓
+POST /api/community/{id}/copy  (Authorization 헤더 포함)
+    ↓
+성공(2xx)  → "✅ 복사됨" 표시 후 dashboard.html 이동
+실패       → 버튼 원복
+```
+
+---
+
+## 커뮤니티 단어장 세부 페이지 신규 생성 (`community-vocab.html`, 2026-06-25)
+
+### 신규 파일
+
+| 파일 | 위치 | 설명 |
+|---|---|---|
+| `community-vocab.html` | `src/main/resources/static/` | 커뮤니티 공개 단어장 세부 조회 (인증 포함) |
+
+### 기능 개요
+
+커뮤니티 목록에서 단어장 카드를 클릭했을 때 진입하는 세부 조회 페이지.
+`vocab.html`과 달리 **읽기 전용**이며 수정·삭제·테스트·북마크 기능 없음.
+
+### 엔드포인트
+
+| 기능 | 엔드포인트 |
+|---|---|
+| 단어장 세부 조회 | `GET /api/community/{id}` |
+| 내 단어장으로 복사 | `POST /api/community/{id}/copy` |
+
+### vocab.html 대비 제거된 요소
+
+| 카테고리 | 제거 항목 |
+|---|---|
+| 헤더 버튼 | 테스트 시작, 수정, 삭제 버튼 |
+| 학습 기능 | 북마크(학습 완료 토글), 학습 진도 바 |
+| 필터 | 학습 완료/미학습 필터 (단어 검색만 유지) |
+| 수정 모드 | `enterEditMode()`, `renderEditHeader()`, `renderEditWords()`, `saveEdit()` 전체 |
+| 삭제 모달 | `#deleteModal` 및 관련 이벤트 |
+
+### 추가된 요소
+
+- "📋 내 단어장으로 복사" 버튼 → `POST /api/community/{id}/copy` 호출 후 `dashboard.html` 이동
+- "← 커뮤니티로 돌아가기" 링크 (헤더 상단)
+
+### community.html 카드 클릭 연결
+
+`pubCard()` 함수에서 제목·설명·메타 영역을 `.pub-card__clickable` 래퍼로 감쌈.
+클릭 시 `community-vocab.html?id={id}` 로 이동. 하단 "복사하기" 버튼은 기존 동작 유지.
+
+```
+카드 본문 클릭  → community-vocab.html?id={id}  (세부 조회)
+복사하기 버튼  → POST /api/community/{id}/copy  (바로 복사)
+```
