@@ -1,9 +1,6 @@
 package com.example.wordcraft.Controller;
 
-import com.example.wordcraft.DTO.Voca.VocaCreateRequestDTO;
-import com.example.wordcraft.DTO.Voca.VocaDetailResponseDTO;
-import com.example.wordcraft.DTO.Voca.VocaResponseDTO;
-import com.example.wordcraft.DTO.Voca.VocabUpdateDTO;
+import com.example.wordcraft.DTO.Voca.*;
 import com.example.wordcraft.Service.VocaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -55,6 +52,15 @@ public class VocaController {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(Map.of("message", "success updateVocabularies"));
+    }
+
+    @PutMapping("/{id}/wordLearn")
+    public ResponseEntity<Map<String, String>> updateLearned(@PathVariable Long id,
+                                                             @RequestBody VocaWordLearnDTO vocaWordLearnDTO) {
+        vocaService.updateVocaWordLearn(id, vocaWordLearnDTO);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(Map.of("message", "success updateLearnedWord"));
     }
 
     @DeleteMapping("/{id}")

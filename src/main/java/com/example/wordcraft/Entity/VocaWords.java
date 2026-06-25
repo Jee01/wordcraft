@@ -43,6 +43,9 @@ public class VocaWords {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(nullable = false)
+    private Boolean learned;
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();

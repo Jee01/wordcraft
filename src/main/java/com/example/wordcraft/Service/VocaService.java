@@ -7,13 +7,11 @@ import com.example.wordcraft.Entity.Vocabularies;
 import com.example.wordcraft.Repository.UserRepository;
 import com.example.wordcraft.Repository.VocaWordsRepository;
 import com.example.wordcraft.Repository.VocabulariesRepository;
-import jakarta.validation.constraints.Null;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,6 +46,7 @@ public class VocaService {
                         .ipa(wordDTO.getIpa())
                         .examples(wordDTO.getExamples())
                         .memoryTip(wordDTO.getMemoryTip())
+                        .learned(false)
                         .build())
                 .toList();
 
@@ -89,8 +88,7 @@ public class VocaService {
     //단어장 세부 조회
     @Transactional
     public VocaDetailResponseDTO getVocaDetail(Long id){
-        Vocabularies vocabularies = vocabulariesRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("vocabularies not found"));
+        Vocabularies vocabularies = getVocabularies(id);
         List<VocaWords> vocaWords = vocaWordsRepository.findByVocabularyId(vocabularies.getId());
 
         List<VocaWordRequestDTO> vocaWordRequestDTOS = vocaWords.stream()
@@ -121,9 +119,7 @@ public class VocaService {
     //전부 삭제하고 다시 만드는 방식. 추후 처리시간 확인 후 변경 여부 결정.
     @Transactional
     public void updateVoca(Long id, VocabUpdateDTO vocabUpdateDTO){
-        Vocabularies updateVocab = vocabulariesRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("vocabularies not found"));
-
+        Vocabularies updateVocab = getVocabularies(id);
 
         updateVocab.setTitle(vocabUpdateDTO.getTitle());
         updateVocab.setCreatedAt(vocabUpdateDTO.getUpdateAt());
@@ -141,20 +137,34 @@ public class VocaService {
                     .meanings(wordDTO.getMeanings())
                     .examples(wordDTO.getExamples())
                     .memoryTip(wordDTO.getMemoryTip())
+                    .learned(wordDTO.getLearned())
                     .build();
             vocaWordsRepository.save(vocaWords);
         });
+    }
 
+    @Transactional
+    public void updateVocaWordLearn(Long id, VocaWordLearnDTO vocabLearnDTO){
+        Vocabularies updateVocaL = getVocabularies(id);
+        VocaWords updateWordL = vocaWordsRepository.findVocaWordsById(updateVocaL, vocabLearnDTO.getId())
+                .orElseThrow(() -> new RuntimeException("word not found"));
 
+        Boolean status = vocabLearnDTO.getLearned();
+
+        updateWordL.setLearned(status);
+        vocaWordsRepository.save(updateWordL);
     }
 
     //단어장 삭제
     @Transactional
     public void deleteVoca(Long id){
-        Vocabularies vocabularies = vocabulariesRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("vocabularies not found"));
+        Vocabularies vocabularies = getVocabularies(id);
         vocaWordsRepository.deleteByVocabularyId(vocabularies.getId());
         vocabulariesRepository.delete(vocabularies);
     }
 
+    protected Vocabularies getVocabularies(Long id){
+        return vocabulariesRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("vocabularies not found"));
+    }
 }

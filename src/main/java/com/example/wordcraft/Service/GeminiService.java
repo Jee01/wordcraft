@@ -63,7 +63,7 @@ public class GeminiService {
                     "examples": [
                       {"en": "영어 예문", "ko": "한국어 해석"}
                     ],
-                    "memoryTip": "기억에 도움이 되는 어원이나 연상법"
+                    "memoryTip": "기억에 도움이 되는 어원이나 연상법. 간결하고 짧게. (예시 : impl(안에) + ment → 안으로 채워 넣다 → 실행하다)"
                   }
                 ]
                 """.formatted(tag, text);
