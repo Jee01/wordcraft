@@ -29,11 +29,7 @@ public class VocaController {
                 .status(HttpStatus.CREATED)
                 .body(Map.of("message", "success createVocabularies"));
     }
-    @GetMapping
-    public ResponseEntity<List<VocaResponseDTO>> getVocaList() {
-        List<VocaResponseDTO> vocabularies = vocaService.getVocaList();
-        return ResponseEntity.ok(vocabularies);
-    }
+
     @GetMapping("/my")
     public ResponseEntity<List<VocaResponseDTO>> getMyVocaList(@AuthenticationPrincipal UserDetails userDetails) {
         String email = userDetails.getUsername();
@@ -42,8 +38,10 @@ public class VocaController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<VocaDetailResponseDTO> getVocaById(@PathVariable Long id) {
-        return ResponseEntity.ok(vocaService.getVocaDetail(id));
+    public ResponseEntity<VocaDetailResponseDTO> getVocaById(@AuthenticationPrincipal UserDetails userDetails
+            ,@PathVariable Long id) {
+        String email = userDetails.getUsername();
+        return ResponseEntity.ok(vocaService.getVocaDetail(email, id));
     }
 
     @PutMapping("/{id}")

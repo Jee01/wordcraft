@@ -1,5 +1,8 @@
 package com.example.wordcraft.Service;
 
+import com.example.wordcraft.DTO.Voca.VocaDetailResponseDTO;
+import com.example.wordcraft.DTO.Voca.VocaResponseDTO;
+import com.example.wordcraft.DTO.Voca.VocaWordRequestDTO;
 import com.example.wordcraft.Entity.Users;
 import com.example.wordcraft.Entity.VocaWords;
 import com.example.wordcraft.Entity.Vocabularies;
@@ -8,8 +11,11 @@ import com.example.wordcraft.Repository.VocaWordsRepository;
 import com.example.wordcraft.Repository.VocabulariesRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -45,9 +51,63 @@ public class CommunityService {
                         .ipa(copyWords.getIpa())
                         .examples(copyWords.getExamples())
                         .memoryTip(copyWords.getMemoryTip())
+                        .learned(false)
                         .build())
                 .toList();
 
         vocaWordsRepository.saveAll(copyWordsList);
+    }
+
+    public List<VocaResponseDTO> getVocaList(){
+        List<Vocabularies> vocabulariesIsPublic = vocabulariesRepository.findAllByIsPublic(true);
+
+        return vocabulariesIsPublic.stream()
+                .map(vocab->{
+                            int wordCount = vocaWordsRepository.countByVocabularyId(vocab.getId());
+                            VocaResponseDTO vocaResponseDTO = VocaResponseDTO.from(vocab);
+                            vocaResponseDTO.setWordCount(wordCount);
+                            return vocaResponseDTO;
+                        }
+                )
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public VocaDetailResponseDTO getVocaDetail(Long id){
+        Vocabularies vocabularies = getVocabularies(id);
+        if(Objects.equals(vocabularies.getIsPublic(),false)){
+            throw new RuntimeException("private vocab"); //이후 예외 처리 대시보드로 보내도록 변경
+        }
+        List<VocaWords> vocaWords = vocaWordsRepository.findByVocabularyId(vocabularies.getId());
+
+        List<VocaWordRequestDTO> vocaWordRequestDTOS = vocaWords.stream()
+                .map(w->{
+                    VocaWordRequestDTO dto = new VocaWordRequestDTO();
+                    dto.setId(w.getId());
+                    dto.setWord(w.getWord());
+                    dto.setMeaning(w.getMeanings());
+                    dto.setPos(w.getPos());
+                    dto.setIpa(w.getIpa());
+                    dto.setExamples(w.getExamples());
+                    dto.setMemoryTip(w.getMemoryTip());
+                    dto.setLearned(w.getLearned());
+                    return dto;
+                })
+                .toList();
+
+        return VocaDetailResponseDTO.builder()
+                .id(vocabularies.getId())
+                .title(vocabularies.getTitle())
+                .isPublic(vocabularies.getIsPublic())
+                .wordCount(vocaWords.size())
+                .updatedAt(vocabularies.getCreatedAt().toString().substring(0, 10))
+                .author(vocabularies.getUser().getNickname())
+                .words(vocaWordRequestDTOS)
+                .build();
+    }
+
+    protected Vocabularies getVocabularies(Long id){
+        return vocabulariesRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("vocabularies not found"));
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,21 +54,6 @@ public class VocaService {
         vocaWordsRepository.saveAll(vocaWordsList);
     }
 
-    //커뮤니티 용 (이후 옮겨야 할듯)
-    public List<VocaResponseDTO> getVocaList(){
-        List<Vocabularies> vocabulariesIsPublic = vocabulariesRepository.findAllByIsPublic(true);
-
-        return vocabulariesIsPublic.stream()
-                .map(vocab->{
-                    int wordCount = vocaWordsRepository.countByVocabularyId(vocab.getId());
-                    VocaResponseDTO vocaResponseDTO = VocaResponseDTO.from(vocab);
-                    vocaResponseDTO.setWordCount(wordCount);
-                    return vocaResponseDTO;
-                    }
-                )
-                .collect(Collectors.toList());
-    }
-
     //개인 단어장
     public List<VocaResponseDTO> getVocaListByUserId(String email){
         Users user = userRepository.findByEmail(email)
@@ -87,19 +73,24 @@ public class VocaService {
 
     //단어장 세부 조회
     @Transactional
-    public VocaDetailResponseDTO getVocaDetail(Long id){
+    public VocaDetailResponseDTO getVocaDetail(String email, Long id){
         Vocabularies vocabularies = getVocabularies(id);
+        if(!Objects.equals(vocabularies.getUser().getEmail(), email) && Objects.equals(vocabularies.getIsPublic(),false)){
+            throw new RuntimeException("user's match error or private vocab"); //이후 예외 처리 대시보드로 보내도록 변경
+        }
         List<VocaWords> vocaWords = vocaWordsRepository.findByVocabularyId(vocabularies.getId());
 
         List<VocaWordRequestDTO> vocaWordRequestDTOS = vocaWords.stream()
                 .map(w->{
                     VocaWordRequestDTO dto = new VocaWordRequestDTO();
+                    dto.setId(w.getId());
                     dto.setWord(w.getWord());
                     dto.setMeaning(w.getMeanings());
                     dto.setPos(w.getPos());
                     dto.setIpa(w.getIpa());
                     dto.setExamples(w.getExamples());
                     dto.setMemoryTip(w.getMemoryTip());
+                    dto.setLearned(w.getLearned());
                     return dto;
                 })
                 .toList();
@@ -131,6 +122,7 @@ public class VocaService {
         vocabUpdateDTO.getWords().forEach(wordDTO->{
             VocaWords vocaWords = VocaWords.builder()
                     .vocabulary(updateVocab)
+                    .id(wordDTO.getId())
                     .word(wordDTO.getWord())
                     .ipa(wordDTO.getIpa())
                     .pos(wordDTO.getPos())

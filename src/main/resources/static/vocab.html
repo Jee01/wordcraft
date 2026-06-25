@@ -304,6 +304,8 @@
           // VocaDetailResponseDTO 빌더에 tags가 없어 null로 오는 문제 정규화
           if (!Array.isArray(vocabData.tags)) vocabData.tags = [];
           wordsData = vocabData.words || [];
+          vocabData.learnedCount = wordsData.filter(w => w.learned).length;
+          vocabData.wordCount = vocabData.wordCount || wordsData.length;
           renderHeader(vocabData);
           renderWords(wordsData);
           attachReveal();
@@ -311,14 +313,15 @@
           /* fallback sample data */
           vocabData = {
             id: vocabId, title: '비즈니스 필수 동사 100', description: '실제 비즈니스 상황에서 자주 쓰이는 동사 중심',
-            tags: ['TOEIC', '비즈니스'], isPublic: true, wordCount: 3, learnedCount: 1,
+            tags: ['TOEIC', '비즈니스'], isPublic: true, wordCount: 3,
             author: '나', updatedAt: '2026-06-06',
           };
           wordsData = [
-            { id: 1, word: 'implement', ipa: '/ˈɪmplɪmənt/', meaning: '시행하다 · 실행하다', pos: '동사', example: 'The company will <em>implement</em> the new policy next quarter.', tip: '💡 impl(안에) + ment → 안으로 채워 넣다 → 실행하다', learned: true },
-            { id: 2, word: 'significant', ipa: '/sɪɡˈnɪfɪkənt/', meaning: '중요한 · 상당한', pos: '형용사', example: 'There was a <em>significant</em> improvement in test scores.', tip: '💡 sign(신호) + ific → 신호를 보낼 만큼 중요한', learned: false },
-            { id: 3, word: 'constitute', ipa: '/ˈkɒnstɪtjuːt/', meaning: '구성하다 · ~에 해당하다', pos: '동사', example: 'Women <em>constitute</em> 40% of the workforce.', tip: '💡 con(함께) + stitute(세우다) → 함께 세워 구성하다', learned: false },
+            { id: 1, word: 'implement', ipa: '/ˈɪmplɪmənt/', meaning: '시행하다 · 실행하다', pos: '동사', examples: 'The company will implement the new policy next quarter.', memoryTip: '💡 impl(안에) + ment → 안으로 채워 넣다 → 실행하다', learned: true },
+            { id: 2, word: 'significant', ipa: '/sɪɡˈnɪfɪkənt/', meaning: '중요한 · 상당한', pos: '형용사', examples: 'There was a significant improvement in test scores.', memoryTip: '💡 sign(신호) + ific → 신호를 보낼 만큼 중요한', learned: false },
+            { id: 3, word: 'constitute', ipa: '/ˈkɒnstɪtjuːt/', meaning: '구성하다 · ~에 해당하다', pos: '동사', examples: 'Women constitute 40% of the workforce.', memoryTip: '💡 con(함께) + stitute(세우다) → 함께 세워 구성하다', learned: false },
           ];
+          vocabData.learnedCount = wordsData.filter(w => w.learned).length;
           renderHeader(vocabData);
           renderWords(wordsData);
           attachReveal();
@@ -400,14 +403,16 @@
         const wordId = btn.dataset.id;
         const isLearned = btn.classList.contains('active');
         try {
-          await fetch(`/api/vocab/${vocabId}/words/${wordId}/learned`, {
+          await fetch(`/api/vocab/${vocabId}/wordLearn`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-            body: JSON.stringify({ learned: !isLearned }),
+            body: JSON.stringify({ id: Number(wordId), learned: !isLearned }),
           });
         } catch { /* optimistic UI */ }
         const word = wordsData.find(w => String(w.id) === String(wordId));
         if (word) word.learned = !isLearned;
+        vocabData.learnedCount = wordsData.filter(w => w.learned).length;
+        renderHeader(vocabData);
         renderWords(filterWords());
         attachReveal();
       }
@@ -594,7 +599,8 @@
             pos:       w.pos       || '',
             meanings:  w.meaning   || '',
             examples:  w.examples  || '',
-            memoryTip: w.memoryTip || ''
+            memoryTip: w.memoryTip || '',
+            learned: w.learned ?? false
           }))
         };
 

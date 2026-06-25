@@ -217,8 +217,25 @@
           });
           if (res.status === 401) { logout(); return; }
           const vocabs = await res.json();
-          renderVocabs(vocabs);
-          updateStats(vocabs);
+
+          const vocabsWithProgress = await Promise.all(
+            vocabs.map(async (v) => {
+              try {
+                const detailRes = await fetch(`/api/vocab/${v.id}`, {
+                  headers: { Authorization: 'Bearer ' + token }
+                });
+                if (detailRes.ok) {
+                  const detail = await detailRes.json();
+                  const learnedCount = (detail.words || []).filter(w => w.learned).length;
+                  return { ...v, learnedCount };
+                }
+              } catch {}
+              return v;
+            })
+          );
+
+          renderVocabs(vocabsWithProgress);
+          updateStats(vocabsWithProgress);
         } catch {
           renderVocabsFallback();
         }

@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 @Data
 public class VocaWordRequestDTO {
+    private Long id;
     @NotBlank(message = "word")
     private String word;
     @NotBlank(message = "meaning")
@@ -12,5 +13,5 @@ public class VocaWordRequestDTO {
     private String ipa;
     private String examples;
     private String memoryTip;
-    //private boolean learned;
+    private Boolean learned;
 }

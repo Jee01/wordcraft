@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class VocawUpdateDTO {
+    private Long id;
     private String word;
     private String ipa;
     private String pos;
