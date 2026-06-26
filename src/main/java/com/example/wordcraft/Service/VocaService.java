@@ -75,9 +75,9 @@ public class VocaService {
     @Transactional
     public VocaDetailResponseDTO getVocaDetail(String email, Long id){
         Vocabularies vocabularies = getVocabularies(id);
-        if(!Objects.equals(vocabularies.getUser().getEmail(), email)){
-            throw new RuntimeException("user's match error or private vocab"); //이후 예외 처리 대시보드로 보내도록 변경
-        }
+
+        userValid(email, vocabularies);//이후 예외 처리 대시보드로 보내도록 변경
+
         List<VocaWords> vocaWords = vocaWordsRepository.findByVocabularyId(vocabularies.getId());
 
         List<VocaWordRequestDTO> vocaWordRequestDTOS = vocaWords.stream()
@@ -109,8 +109,10 @@ public class VocaService {
     //단어장 수정
     //전부 삭제하고 다시 만드는 방식. 추후 처리시간 확인 후 변경 여부 결정.
     @Transactional
-    public void updateVoca(Long id, VocabUpdateDTO vocabUpdateDTO){
+    public void updateVoca(String email, Long id, VocabUpdateDTO vocabUpdateDTO){
         Vocabularies updateVocab = getVocabularies(id);
+
+        userValid(email, updateVocab);
 
         updateVocab.setTitle(vocabUpdateDTO.getTitle());
         updateVocab.setCreatedAt(vocabUpdateDTO.getUpdateAt());
@@ -138,6 +140,7 @@ public class VocaService {
     @Transactional
     public void updateVocaWordLearn(Long id, VocaWordLearnDTO vocabLearnDTO){
         Vocabularies updateVocaL = getVocabularies(id);
+
         VocaWords updateWordL = vocaWordsRepository.findVocaWordsById(updateVocaL, vocabLearnDTO.getId())
                 .orElseThrow(() -> new RuntimeException("word not found"));
 
@@ -149,14 +152,25 @@ public class VocaService {
 
     //단어장 삭제
     @Transactional
-    public void deleteVoca(Long id){
+    public void deleteVoca(Long id, String email){
         Vocabularies vocabularies = getVocabularies(id);
+
+        userValid(email, vocabularies);
+
         vocaWordsRepository.deleteByVocabularyId(vocabularies.getId());
         vocabulariesRepository.delete(vocabularies);
     }
 
-    protected Vocabularies getVocabularies(Long id){
+    private Vocabularies getVocabularies(Long id){
         return vocabulariesRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("vocabularies not found"));
     }
+    private void userValid(String email, Vocabularies vocabularies){
+        Users users = userRepository.findByEmail(email)
+                .orElseThrow(()-> new RuntimeException("not found user"));
+        if (!Objects.equals(vocabularies.getUser().getEmail(), users.getEmail())){
+            throw new RuntimeException("user's match error");
+        }
+    }
+
 }

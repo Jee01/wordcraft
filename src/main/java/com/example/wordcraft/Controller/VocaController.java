@@ -22,8 +22,7 @@ public class VocaController {
     @PostMapping
     public ResponseEntity<Map<String, String>> createVoca(@Valid @RequestBody VocaCreateRequestDTO vocaCreateRequestDTO
     ,@AuthenticationPrincipal UserDetails userDetails) {
-        String email = userDetails.getUsername();
-        vocaService.createVocabularies(vocaCreateRequestDTO, email);
+        vocaService.createVocabularies(vocaCreateRequestDTO, getEmail(userDetails));
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -32,21 +31,20 @@ public class VocaController {
 
     @GetMapping("/my")
     public ResponseEntity<List<VocaResponseDTO>> getMyVocaList(@AuthenticationPrincipal UserDetails userDetails) {
-        String email = userDetails.getUsername();
-        List<VocaResponseDTO> vocabularies = vocaService.getVocaListByUserId(email);
+        List<VocaResponseDTO> vocabularies = vocaService.getVocaListByUserId(getEmail(userDetails));
         return ResponseEntity.ok(vocabularies);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<VocaDetailResponseDTO> getVocaById(@AuthenticationPrincipal UserDetails userDetails
             ,@PathVariable Long id) {
-        String email = userDetails.getUsername();
-        return ResponseEntity.ok(vocaService.getVocaDetail(email, id));
+        return ResponseEntity.ok(vocaService.getVocaDetail(getEmail(userDetails), id));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String, String>> updateVoca(@PathVariable Long id, @RequestBody VocabUpdateDTO vocabUpdateDTO) {
-        vocaService.updateVoca(id, vocabUpdateDTO);
+    public ResponseEntity<Map<String, String>> updateVoca(@PathVariable Long id, @RequestBody VocabUpdateDTO vocabUpdateDTO
+            , @AuthenticationPrincipal UserDetails userDetails) {
+        vocaService.updateVoca(getEmail(userDetails), id, vocabUpdateDTO);
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(Map.of("message", "success updateVocabularies"));
@@ -62,8 +60,13 @@ public class VocaController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteVoca(@PathVariable Long id) {
-        vocaService.deleteVoca(id);
+    public ResponseEntity<Void> deleteVoca(@PathVariable Long id,
+                                           @AuthenticationPrincipal UserDetails userDetails) {
+        vocaService.deleteVoca(id, getEmail(userDetails));
         return ResponseEntity.noContent().build();
+    }
+
+    private String getEmail(UserDetails userDetails) {
+        return userDetails.getUsername();
     }
 }
