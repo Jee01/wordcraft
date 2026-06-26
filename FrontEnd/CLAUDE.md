@@ -719,3 +719,30 @@ POST /api/community/{id}/copy  (Authorization 헤더 포함)
 카드 본문 클릭  → community-vocab.html?id={id}  (세부 조회)
 복사하기 버튼  → POST /api/community/{id}/copy  (바로 복사)
 ```
+
+---
+
+## 커뮤니티 좋아요 API 연동 (`community.html`, 2026-06-26)
+
+### 변경 내용
+
+| 항목 | 변경 전 | 변경 후 |
+|---|---|---|
+| 좋아요 버튼 클릭 | 클라이언트 상태 토글만 (API 호출 없음) | `POST /api/community/{id}/like` 실제 호출 |
+| 카드 클릭 시 세부 페이지 이동 | 좋아요 버튼 클릭 시에도 발생 (버블링 문제) | `e.stopPropagation()` 추가로 해결 |
+| 좋아요 수 표시 | `v.likes` 필드 참조 → 항상 0 | `v.likeCount` 필드 참조로 수정 (`normalize()` 내부) |
+
+### 좋아요 토글 흐름
+
+```
+♥ 버튼 클릭
+    ↓
+e.stopPropagation()  (카드 클릭 이벤트 차단)
+    ↓
+POST /api/community/{id}/like  (Authorization 헤더 포함)
+    ↓
+성공(2xx)  → 카운트 +1/-1, 색상 토글, liked 클래스 토글
+실패       → UI 상태 유지
+```
+
+**주의:** 좋아요 버튼(`.like-btn`)이 `.pub-card__clickable` 내부에 위치하므로 `e.stopPropagation()` 없이는 카드 세부 페이지로 이동해버림.

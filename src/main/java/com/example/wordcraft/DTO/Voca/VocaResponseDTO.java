@@ -15,6 +15,7 @@ public class VocaResponseDTO {
     private String tag;
     private Boolean isPublic;
     private String nickname;
+    private Integer likeCount;
     private LocalDateTime createdAt;
     private Integer wordCount;
 

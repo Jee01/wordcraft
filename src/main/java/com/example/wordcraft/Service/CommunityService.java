@@ -3,9 +3,11 @@ package com.example.wordcraft.Service;
 import com.example.wordcraft.DTO.Voca.VocaDetailResponseDTO;
 import com.example.wordcraft.DTO.Voca.VocaResponseDTO;
 import com.example.wordcraft.DTO.Voca.VocaWordRequestDTO;
+import com.example.wordcraft.Entity.CommunityLike;
 import com.example.wordcraft.Entity.Users;
 import com.example.wordcraft.Entity.VocaWords;
 import com.example.wordcraft.Entity.Vocabularies;
+import com.example.wordcraft.Repository.CommunityLikeRepository;
 import com.example.wordcraft.Repository.UserRepository;
 import com.example.wordcraft.Repository.VocaWordsRepository;
 import com.example.wordcraft.Repository.VocabulariesRepository;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,7 +26,9 @@ public class CommunityService {
     private final VocabulariesRepository vocabulariesRepository;
     private final VocaWordsRepository vocaWordsRepository;
     private final UserRepository userRepository;
+    private final CommunityLikeRepository communityLikeRepository;
 
+    @Transactional
     public void copyVocabularies(Long id, String email){
         Users requestUser = userRepository.findByEmail(email)
                 .orElseThrow(()-> new RuntimeException("not found user"));
@@ -64,8 +69,10 @@ public class CommunityService {
         return vocabulariesIsPublic.stream()
                 .map(vocab->{
                             int wordCount = vocaWordsRepository.countByVocabularyId(vocab.getId());
+                            int likeCount = communityLikeRepository.countByVocabularyId(vocab.getId());
                             VocaResponseDTO vocaResponseDTO = VocaResponseDTO.from(vocab);
                             vocaResponseDTO.setWordCount(wordCount);
+                            vocaResponseDTO.setLikeCount(likeCount);
                             return vocaResponseDTO;
                         }
                 )
@@ -104,6 +111,27 @@ public class CommunityService {
                 .author(vocabularies.getUser().getNickname())
                 .words(vocaWordRequestDTOS)
                 .build();
+    }
+
+    @Transactional
+    public Boolean likeVoca(Long id, String email){
+        Vocabularies vocabularies = getVocabularies(id);
+        Users users = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("email not found"));
+
+        Optional<CommunityLike> communityLike = communityLikeRepository.findByUserAndVocabulary(users, vocabularies);
+
+        if (communityLike.isPresent()) {
+            communityLikeRepository.delete(communityLike.get());
+            return false;
+        } else {
+            CommunityLike newLike = CommunityLike.builder()
+                    .vocabulary(vocabularies)
+                    .user(users)
+                    .build();
+            communityLikeRepository.save(newLike);
+            return true;
+        }
     }
 
     protected Vocabularies getVocabularies(Long id){

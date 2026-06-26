@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/community")
@@ -22,8 +23,7 @@ public class CommunityController {
     @PostMapping("/{id}/copy")
     public ResponseEntity<Map<String, String>> copyVocabularies(@PathVariable Long id,
                                                                 @AuthenticationPrincipal UserDetails userDetails) {
-        String email = userDetails.getUsername();
-        communityService.copyVocabularies(id, email);
+        communityService.copyVocabularies(id, getEmail(userDetails));
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(Map.of("message", "success copy vocabularies"));
@@ -35,8 +35,26 @@ public class CommunityController {
         return ResponseEntity.ok(vocabularies);
     }
 
+    @PostMapping("/{id}/like")
+    public ResponseEntity<Map<String, String>> likeVocabularies(@PathVariable Long id,
+                                                                @AuthenticationPrincipal UserDetails userDetails) {
+        Boolean status = communityService.likeVoca(id, getEmail(userDetails));
+        if(status) {
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of("message", "success like vocabularies"));
+        }
+        else{
+            return ResponseEntity.status(HttpStatus.NO_CONTENT)
+                    .body(Map.of("message", "success cancel vocabularies"));
+        }
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<VocaDetailResponseDTO> getVocaDetail(@PathVariable Long id) {
         return ResponseEntity.ok(communityService.getVocaDetail(id));
+    }
+
+    protected String getEmail(UserDetails userDetails) {
+        return userDetails.getUsername();
     }
 }
