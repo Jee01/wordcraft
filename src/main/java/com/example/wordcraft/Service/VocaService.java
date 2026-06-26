@@ -138,8 +138,10 @@ public class VocaService {
     }
 
     @Transactional
-    public void updateVocaWordLearn(Long id, VocaWordLearnDTO vocabLearnDTO){
+    public void updateVocaWordLearn(Long id, VocaWordLearnDTO vocabLearnDTO, String email){
         Vocabularies updateVocaL = getVocabularies(id);
+
+        userValid(email, updateVocaL);
 
         VocaWords updateWordL = vocaWordsRepository.findVocaWordsById(updateVocaL, vocabLearnDTO.getId())
                 .orElseThrow(() -> new RuntimeException("word not found"));
@@ -166,9 +168,7 @@ public class VocaService {
                 .orElseThrow(() -> new RuntimeException("vocabularies not found"));
     }
     private void userValid(String email, Vocabularies vocabularies){
-        Users users = userRepository.findByEmail(email)
-                .orElseThrow(()-> new RuntimeException("not found user"));
-        if (!Objects.equals(vocabularies.getUser().getEmail(), users.getEmail())){
+        if (!Objects.equals(vocabularies.getUser().getEmail(), email)){
             throw new RuntimeException("user's match error");
         }
     }

@@ -62,4 +62,14 @@ public class UserController {
         userService.deleteUser(email, userDeleteDTO);
         return ResponseEntity.ok(Map.of("message", "success delete"));
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout(@AuthenticationPrincipal UserDetails userDetails){
+        return null;
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<Map<String, String>> refresh(@AuthenticationPrincipal UserDetails userDetails){
+        return null;
+    }
 }

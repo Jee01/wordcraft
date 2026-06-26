@@ -52,8 +52,9 @@ public class VocaController {
 
     @PutMapping("/{id}/wordLearn")
     public ResponseEntity<Map<String, String>> updateLearned(@PathVariable Long id,
-                                                             @RequestBody VocaWordLearnDTO vocaWordLearnDTO) {
-        vocaService.updateVocaWordLearn(id, vocaWordLearnDTO);
+                                                             @RequestBody VocaWordLearnDTO vocaWordLearnDTO,
+                                                             @AuthenticationPrincipal UserDetails userDetails) {
+        vocaService.updateVocaWordLearn(id, vocaWordLearnDTO, getEmail(userDetails));
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(Map.of("message", "success updateLearnedWord"));
