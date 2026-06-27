@@ -1,4 +1,4 @@
-package com.example.wordcraft.Service;
+package com.example.wordcraft.Service.VocaService;
 
 import com.example.wordcraft.DTO.Voca.*;
 import com.example.wordcraft.Entity.Users;

@@ -2,7 +2,7 @@ package com.example.wordcraft.Controller;
 
 import com.example.wordcraft.DTO.AI.GenerateWordRequestDTO;
 import com.example.wordcraft.DTO.AI.WordAnalysisDTO;
-import com.example.wordcraft.Service.GeminiService;
+import com.example.wordcraft.Service.AiService.GeminiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

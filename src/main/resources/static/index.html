@@ -353,9 +353,9 @@
     }
 
     /* ── 로그인 상태에 따른 네브 전환 ── */
-    const token = localStorage.getItem('accessToken');
+    fetch('/api/auth/me', { credentials: 'include' }).then(res => {
+      if (!res.ok) return;
 
-    if (token) {
       /* 로그인 상태: 로그인/시작하기 숨기고 대시보드/로그아웃 표시 */
       document.getElementById('navLogin').style.display       = 'none';
       document.getElementById('navRegister').style.display    = 'none';
@@ -373,16 +373,11 @@
         heroCta.textContent = '대시보드로 이동';
         heroCta.href = 'dashboard.html';
       }
-    }
+    });
 
     /* ── 로그아웃 ── */
-    function logout() {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      window.location.reload();
-    }
-    document.getElementById('navLogout').addEventListener('click', logout);
-    document.getElementById('mobileNavLogout').addEventListener('click', logout);
+    document.getElementById('navLogout').addEventListener('click', doLogout);
+    document.getElementById('mobileNavLogout').addEventListener('click', doLogout);
   })();
   </script>
 </body>

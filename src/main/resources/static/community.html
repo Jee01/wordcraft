@@ -160,9 +160,9 @@
 
   <script src="main.js"></script>
   <script>
-    (function () {
-      const token = localStorage.getItem('accessToken');
-      if (!token) { window.location.href = 'login.html'; return; }
+    (async function () {
+      const user = await requireAuth();
+      if (!user) return;
 
       const html = document.documentElement;
       const toggle = document.getElementById('themeToggle');

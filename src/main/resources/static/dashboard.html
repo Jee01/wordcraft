@@ -183,10 +183,10 @@
 
   <script src="main.js"></script>
   <script>
-    (function () {
+    (async function () {
       /* ===== AUTH CHECK ===== */
-      const token = localStorage.getItem('accessToken');
-      if (!token) { window.location.href = 'login.html'; return; }
+      const user = await requireAuth();
+      if (!user) return;
 
       /* ===== THEME ===== */
       const html = document.documentElement;

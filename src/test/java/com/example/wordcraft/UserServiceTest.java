@@ -3,7 +3,7 @@ package com.example.wordcraft;
 import com.example.wordcraft.DTO.Login.LoginRequestDTO;
 import com.example.wordcraft.DTO.Login.TokenResponseDTO;
 import com.example.wordcraft.DTO.Login.UserRegisterDTO;
-import com.example.wordcraft.Service.UserService;
+import com.example.wordcraft.Service.UserService.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

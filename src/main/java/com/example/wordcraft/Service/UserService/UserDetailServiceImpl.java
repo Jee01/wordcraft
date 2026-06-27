@@ -1,4 +1,4 @@
-package com.example.wordcraft.Service;
+package com.example.wordcraft.Service.UserService;
 
 import com.example.wordcraft.Entity.Users;
 import com.example.wordcraft.Repository.UserRepository;
@@ -21,7 +21,7 @@ public class UserDetailServiceImpl implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("email not found"));
         return User.builder()
                 .username(users.getEmail())
-                .password(users.getPassword())
+                .password(users.getPassword() != null ? users.getPassword() : "")
                 .roles("USER")
                 .build();
     }

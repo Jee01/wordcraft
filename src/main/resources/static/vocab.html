@@ -262,9 +262,9 @@
 
   <script src="main.js"></script>
   <script>
-    (function () {
-      const token = localStorage.getItem('accessToken');
-      if (!token) { window.location.href = 'login.html'; return; }
+    (async function () {
+      const user = await requireAuth();
+      if (!user) return;
 
       /* theme */
       const html = document.documentElement;

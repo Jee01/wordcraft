@@ -1,16 +1,14 @@
-package com.example.wordcraft.Service;
+package com.example.wordcraft.Service.UserService;
 
 import com.example.wordcraft.DTO.Login.*;
 import com.example.wordcraft.Entity.Users;
 import com.example.wordcraft.JWT.JwtTokenProvider;
 import com.example.wordcraft.Repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Objects;
 
 @RequiredArgsConstructor
 @Service
@@ -28,6 +26,7 @@ public class UserService {
         Users users = new Users();
         users.setNickname(userRegisterDTO.getNickname());
         users.setEmail(userRegisterDTO.getEmail());
+        users.setProvider("local");
 
         String encodedPassword = passwordEncoder.encode(userRegisterDTO.getPassword());
         users.setPassword(encodedPassword);
@@ -102,6 +101,15 @@ public class UserService {
         }
 
         return jwtTokenProvider.generateAccessToken(email);
+    }
+
+    public UserDTO loginValidate(UserDetails userDetails) {
+        Users users = validUser(userDetails.getUsername());
+
+        return UserDTO.builder()
+                .email(users.getEmail())
+                .nickname(users.getNickname())
+                .build();
     }
 
     private Users validUser(String email) {

@@ -1,7 +1,12 @@
 package com.example.wordcraft.Controller;
 
 import com.example.wordcraft.DTO.Login.*;
-import com.example.wordcraft.Service.UserService;
+import com.example.wordcraft.Entity.Users;
+import com.example.wordcraft.Service.UserService.UserService;
+import com.example.wordcraft.Util.CookieUtil;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +23,11 @@ import java.util.Map;
 public class UserController {
     private final UserService userService;
 
+    //만료 15분
+    private static final int ACCESS_TOKEN_EXPIRE_SECONDS = 60 * 15;
+    //만료 7일
+    private static final int REFRESH_TOKEN_EXPIRE_SECONDS = 60 * 60 * 24 * 7;
+
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> register(@Valid @RequestBody UserRegisterDTO userRegisterDTO) {
         userService.register(userRegisterDTO);
@@ -27,9 +37,13 @@ public class UserController {
                 .body(Map.of("message", "success registered"));
     }
     @PostMapping("/login")
-    public ResponseEntity<TokenResponseDTO> login (@Valid @RequestBody LoginRequestDTO loginRequestDTO){
+    public ResponseEntity<Map<String, String>> login (@Valid @RequestBody LoginRequestDTO loginRequestDTO,
+                                                   HttpServletResponse response){
 
-        return ResponseEntity.ok(userService.login(loginRequestDTO));
+        TokenResponseDTO tokenResponseDTO = userService.login(loginRequestDTO);
+        CookieUtil.addTokenCookie(response,"access_token",tokenResponseDTO.getAccessToken(),ACCESS_TOKEN_EXPIRE_SECONDS);
+        CookieUtil.addTokenCookie(response,"refresh_token",tokenResponseDTO.getRefreshToken(),REFRESH_TOKEN_EXPIRE_SECONDS);
+        return ResponseEntity.ok(Map.of("message", "success login"));
     }
 
     @PutMapping("/update-password")
@@ -64,16 +78,48 @@ public class UserController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Map<String, String>> logout(@AuthenticationPrincipal UserDetails userDetails){
+    public ResponseEntity<Map<String, String>> logout(@AuthenticationPrincipal UserDetails userDetails,
+                                                      HttpServletRequest request,
+                                                      HttpServletResponse response){
         userService.logout(getEmail(userDetails));
+
+        // Google 로그인 쿠키 삭제
+        CookieUtil.removeCookie(request, response, "access_token");
+        CookieUtil.removeCookie(request, response, "refresh_token");
+
         return ResponseEntity.ok(Map.of("message", "success logout"));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<Map<String, String>> refresh(@RequestBody Map<String, String> refreshMap){
-        String refreshToken = refreshMap.get("refreshToken");
+    public ResponseEntity<Map<String, String>> refresh(HttpServletRequest request,
+                                                       HttpServletResponse response) {
+        // Body 대신 쿠키에서 refreshToken 읽기
+        String refreshToken = null;
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("refresh_token".equals(cookie.getName())) {
+                    refreshToken = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        if (refreshToken == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "refresh token not found"));
+        }
+
         String newAccessToken = userService.refreshToken(refreshToken);
-        return ResponseEntity.ok(Map.of("new accessToken", newAccessToken));
+
+        // 새 accessToken을 쿠키로 반환
+        CookieUtil.addTokenCookie(response, "access_token", newAccessToken, ACCESS_TOKEN_EXPIRE_SECONDS);
+
+        return ResponseEntity.ok(Map.of("message", "token refreshed"));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserDTO> me(@AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(userService.loginValidate(userDetails));
     }
 
     private String getEmail(UserDetails userDetails){

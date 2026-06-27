@@ -427,6 +427,7 @@
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email:    emailEl.value.trim(),
@@ -442,8 +443,6 @@
         return;
       }
 
-      localStorage.setItem('accessToken',  data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
       location.href = 'index.html';
 
     } catch (err) {
@@ -463,8 +462,7 @@
   });
 
   document.getElementById('googleLogin').addEventListener('click', () => {
-    // TODO: OAuth redirect
-    console.log('Google OAuth');
+    location.href = '/oauth2/authorization/google';
   });
   document.getElementById('githubLogin').addEventListener('click', () => {
     console.log('GitHub OAuth');

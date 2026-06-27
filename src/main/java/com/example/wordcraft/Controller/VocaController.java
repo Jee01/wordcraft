@@ -1,7 +1,7 @@
 package com.example.wordcraft.Controller;
 
 import com.example.wordcraft.DTO.Voca.*;
-import com.example.wordcraft.Service.VocaService;
+import com.example.wordcraft.Service.VocaService.VocaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

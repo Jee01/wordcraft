@@ -1,30 +1,24 @@
 /* ===== AUTH UTILS ===== */
 async function authFetch(url, options = {}) {
-  const token = localStorage.getItem('accessToken');
   const opts = {
     ...options,
+    credentials: 'include',  // 쿠키 자동 첨부
     headers: {
       ...(options.headers || {}),
-      Authorization: 'Bearer ' + token,
     },
   };
 
   let res = await fetch(url, opts);
 
   if (res.status === 401) {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) { doLogout(); return res; }
-
+    // access_token 만료 → refresh 시도
     const refreshRes = await fetch('/api/auth/refresh', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
+      credentials: 'include',
     });
 
     if (refreshRes.ok) {
-      const data = await refreshRes.json();
-      localStorage.setItem('accessToken', data.accessToken);
-      opts.headers.Authorization = 'Bearer ' + data.accessToken;
+      // 새 access_token이 쿠키로 발급됨 → 원래 요청 재시도
       res = await fetch(url, opts);
     } else {
       doLogout();
@@ -35,18 +29,19 @@ async function authFetch(url, options = {}) {
 }
 
 async function doLogout() {
-  const token = localStorage.getItem('accessToken');
-  if (token) {
-    try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: { Authorization: 'Bearer ' + token },
-      });
-    } catch { /* 네트워크 오류여도 로컬 토큰은 삭제 */ }
-  }
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
+  try {
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } catch { /* 네트워크 오류여도 로그아웃 진행 */ }
   window.location.href = 'login.html';
+}
+
+async function requireAuth() {
+  const res = await fetch('/api/auth/me', { credentials: 'include' });
+  if (!res.ok) { window.location.href = 'login.html'; return null; }
+  return res.json(); // { email, nickname }
 }
 
 /* ===== HASH ROUTER ===== */

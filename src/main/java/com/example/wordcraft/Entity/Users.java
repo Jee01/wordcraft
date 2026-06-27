@@ -26,7 +26,7 @@ public class Users {
     @Column(nullable = false, length = 50)
     private String nickname;
 
-    @Column(nullable = false)
+    @Column
     private String password;
 
     @Column(nullable = false)
@@ -34,6 +34,12 @@ public class Users {
 
     @Column
     private String refreshToken;
+
+    @Column
+    private String provider; //local or Google
+
+    @Column
+    private String providerId;
 
     @PrePersist //DB 저장 직전에 자동 실행
     public void prePersist() {

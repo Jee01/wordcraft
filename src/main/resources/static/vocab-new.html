@@ -432,11 +432,11 @@ elaborate"></textarea>
 
   <script src="main.js"></script>
   <script>
-  (function () {
+  (async function () {
 
     /* ── 인증 ── */
-    const token = localStorage.getItem('accessToken');
-    if (!token) { window.location.href = 'login.html'; return; }
+    const user = await requireAuth();
+    if (!user) return;
 
     /* ── 테마 ── */
     const html = document.documentElement;
