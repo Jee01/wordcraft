@@ -326,13 +326,8 @@
     });
 
     /* ── 로그아웃 ── */
-    function logout() {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      window.location.href = 'login.html';
-    }
-    document.getElementById('logoutBtn').addEventListener('click', logout);
-    document.getElementById('logoutBtnMobile').addEventListener('click', logout);
+    document.getElementById('logoutBtn').addEventListener('click', doLogout);
+    document.getElementById('logoutBtnMobile').addEventListener('click', doLogout);
 
     /* ── 인증 체크 ── */
     const token = localStorage.getItem('accessToken');
@@ -560,9 +555,9 @@
       saveBtn.textContent = '저장 중...';
 
       try {
-        const res = await fetch('/api/vocab', {
+        const res = await authFetch('/api/vocab', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
         const data = await res.json().catch(() => ({}));

@@ -722,6 +722,73 @@ POST /api/community/{id}/copy  (Authorization 헤더 포함)
 
 ---
 
+## 로그아웃 / Access Token 자동 갱신 (`main.js`, 2026-06-27)
+
+### 변경 내용
+
+`main.js` 최상단에 두 개의 전역 함수 추가. 모든 보호 페이지가 이미 `main.js`를 로드하므로 별도 파일 없이 전역에서 사용 가능.
+
+### `authFetch(url, options)` — 인증 fetch 래퍼
+
+기존의 `fetch()` + 수동 `Authorization` 헤더 패턴을 대체.
+
+```
+authFetch(url, options) 호출
+    ↓
+accessToken을 localStorage에서 읽어 Authorization 헤더에 자동 추가
+    ↓
+응답이 401이면
+    ├─ refreshToken 없음 → doLogout()
+    └─ refreshToken 있음 → POST /api/auth/refresh 호출
+            ├─ 성공 → 새 accessToken 저장 후 원래 요청 재시도
+            └─ 실패 → doLogout()
+```
+
+**사용법:** 기존 `fetch('/api/...', { headers: { Authorization: 'Bearer ' + token } })` → `authFetch('/api/...')` 로 교체.  
+`Content-Type` 등 다른 헤더는 기존과 동일하게 `options.headers`에 전달하며, `Authorization`만 자동 처리된다.
+
+### `doLogout()` — 서버 연동 로그아웃
+
+기존 각 페이지에 중복 정의되어 있던 로컬 `logout()` 함수를 대체.
+
+```
+doLogout() 호출
+    ↓
+POST /api/auth/logout  (서버 DB의 refreshToken → null)
+    ↓ (네트워크 오류여도 계속 진행)
+localStorage에서 accessToken · refreshToken 삭제
+    ↓
+login.html 이동
+```
+
+> **주의:** `index.html`은 보호 페이지가 아니므로 나중에 네브 로그아웃을 구현할 때 `doLogout()` 대신 `localStorage.removeItem` + `location.reload()` 를 써야 한다.
+
+### 적용 파일
+
+| 파일 | 변경 내용 |
+|---|---|
+| `main.js` | `authFetch`, `doLogout` 전역 함수 추가 |
+| `dashboard.html` | 로컬 `logout()` → `doLogout()`, `fetch()` → `authFetch()` |
+| `community.html` | 동일 |
+| `community-vocab.html` | 동일 |
+| `settings.html` | 동일. 계정 탈퇴 성공 후 `logout()` → `doLogout()` 포함 |
+| `vocab.html` | 동일 |
+| `test.html` | 동일 |
+| `test-result.html` | 동일 |
+| `vocab-new.html` | 동일. `X-AI-Api-Key` 헤더는 `options.headers`로 그대로 전달 |
+| `vocab-import.html` | 동일. FormData 파일 업로드 시 `Content-Type` 헤더 생략 (브라우저 자동 설정 유지) |
+| `manual-vocab-add.html` | 동일 |
+
+### `POST /api/auth/refresh` 엔드포인트
+
+| 항목 | 내용 |
+|---|---|
+| 요청 바디 | `{ "refreshToken": "..." }` |
+| 응답 바디 | `{ "accessToken": "새 토큰" }` |
+| 허용 여부 | `SecurityConfig`에서 `permitAll()` 등록됨 (토큰 없이 접근 가능) |
+
+---
+
 ## 커뮤니티 좋아요 API 연동 (`community.html`, 2026-06-26)
 
 ### 변경 내용

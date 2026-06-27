@@ -28,20 +28,19 @@ public class JwtTokenProvider {
 
     //AccessToken 생성
     public String generateAccessToken(String email) {
-        return Jwts.builder()
-                .subject(email)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis()+ACCESS_TOKEN_EXPIRE_SECONDS))
-                .signWith(key)
-                .compact();
+        return generateTokenOption(email, ACCESS_TOKEN_EXPIRE_SECONDS);
     }
 
     //RefreshToken 생성
     public String generateRefreshToken(String email) {
+        return generateTokenOption(email, REFRESH_TOKEN_EXPIRE_SECONDS);
+    }
+
+    private String generateTokenOption(String email, Long expireSeconds) {
         return Jwts.builder()
                 .subject(email)
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis()+REFRESH_TOKEN_EXPIRE_SECONDS))
+                .expiration(new Date(System.currentTimeMillis()+expireSeconds))
                 .signWith(key)
                 .compact();
     }
@@ -54,6 +53,7 @@ public class JwtTokenProvider {
                 .parseSignedClaims(token)
                 .getPayload()
                 .getSubject();
+
     }
 
     //Token 유효성

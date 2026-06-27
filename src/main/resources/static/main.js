@@ -1,3 +1,54 @@
+/* ===== AUTH UTILS ===== */
+async function authFetch(url, options = {}) {
+  const token = localStorage.getItem('accessToken');
+  const opts = {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      Authorization: 'Bearer ' + token,
+    },
+  };
+
+  let res = await fetch(url, opts);
+
+  if (res.status === 401) {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) { doLogout(); return res; }
+
+    const refreshRes = await fetch('/api/auth/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (refreshRes.ok) {
+      const data = await refreshRes.json();
+      localStorage.setItem('accessToken', data.accessToken);
+      opts.headers.Authorization = 'Bearer ' + data.accessToken;
+      res = await fetch(url, opts);
+    } else {
+      doLogout();
+    }
+  }
+
+  return res;
+}
+
+async function doLogout() {
+  const token = localStorage.getItem('accessToken');
+  if (token) {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token },
+      });
+    } catch { /* 네트워크 오류여도 로컬 토큰은 삭제 */ }
+  }
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  window.location.href = 'login.html';
+}
+
 /* ===== HASH ROUTER ===== */
 (function () {
   // Hash → HTML 파일 매핑

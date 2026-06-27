@@ -118,9 +118,8 @@
         localStorage.setItem('wc-theme', html.classList.contains('light') ? 'light' : 'dark');
       });
 
-      function logout() { localStorage.removeItem('accessToken'); localStorage.removeItem('refreshToken'); window.location.href = 'login.html'; }
-      document.getElementById('logoutBtn').addEventListener('click', logout);
-      document.getElementById('logoutBtnMobile').addEventListener('click', logout);
+      document.getElementById('logoutBtn').addEventListener('click', doLogout);
+      document.getElementById('logoutBtnMobile').addEventListener('click', doLogout);
 
       const params = new URLSearchParams(window.location.search);
       const vocabId = params.get('vocabId');
@@ -149,9 +148,9 @@
       /* Save test history to server */
       async function saveHistory() {
         try {
-          await fetch('/api/test/history', {
+          await authFetch('/api/test/history', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               vocabId: testResults.vocabId,
               testType: testResults.type,

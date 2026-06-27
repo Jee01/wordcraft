@@ -276,9 +276,8 @@
       });
 
       /* logout */
-      function logout() { localStorage.removeItem('accessToken'); localStorage.removeItem('refreshToken'); window.location.href = 'login.html'; }
-      document.getElementById('logoutBtn').addEventListener('click', logout);
-      document.getElementById('logoutBtnMobile').addEventListener('click', logout);
+      document.getElementById('logoutBtn').addEventListener('click', doLogout);
+      document.getElementById('logoutBtnMobile').addEventListener('click', doLogout);
 
       /* Get vocab ID from query string */
       const params = new URLSearchParams(window.location.search);
@@ -291,10 +290,8 @@
       /* Load vocab */
       async function loadVocab() {
         try {
-          const res = await fetch(`/api/vocab/${vocabId}`, {
-            headers: { Authorization: 'Bearer ' + token }
-          });
-          if (res.status === 401) { logout(); return; }
+          const res = await authFetch(`/api/vocab/${vocabId}`);
+          if (res.status === 401) { return; }
           if (res.status === 404) { window.location.href = 'dashboard.html'; return; }
           vocabData = await res.json();
           // Jackson이 primitive boolean isPublic()을 "public" 키로 직렬화하는 문제 정규화
@@ -403,9 +400,9 @@
         const wordId = btn.dataset.id;
         const isLearned = btn.classList.contains('active');
         try {
-          await fetch(`/api/vocab/${vocabId}/wordLearn`, {
+          await authFetch(`/api/vocab/${vocabId}/wordLearn`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: Number(wordId), learned: !isLearned }),
           });
         } catch { /* optimistic UI */ }
@@ -609,12 +606,12 @@
         saveBtn.textContent = '저장 중...';
 
         try {
-          const res = await fetch(`/api/vocab/${vocabId}`, {
+          const res = await authFetch(`/api/vocab/${vocabId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
-          if (res.status === 401) { logout(); return; }
+          if (res.status === 401) { return; }
           if (!res.ok) { showEditBanner('error', '저장에 실패했습니다. 다시 시도해주세요.'); return; }
 
           vocabData.title    = title;
@@ -646,9 +643,7 @@
       });
       document.getElementById('deleteConfirm').addEventListener('click', async () => {
         try {
-          await fetch(`/api/vocab/${vocabId}`, {
-            method: 'DELETE', headers: { Authorization: 'Bearer ' + token }
-          });
+          await authFetch(`/api/vocab/${vocabId}`, { method: 'DELETE' });
         } catch { /* ignore */ }
         window.location.href = 'dashboard.html';
       });

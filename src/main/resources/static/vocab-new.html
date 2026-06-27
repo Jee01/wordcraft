@@ -447,13 +447,8 @@ elaborate"></textarea>
     if (localStorage.getItem('wc-theme') === 'light') html.classList.add('light');
 
     /* ── 로그아웃 ── */
-    function logout() {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      window.location.href = 'login.html';
-    }
-    document.getElementById('logoutBtn').addEventListener('click', logout);
-    document.getElementById('logoutBtnMobile').addEventListener('click', logout);
+    document.getElementById('logoutBtn').addEventListener('click', doLogout);
+    document.getElementById('logoutBtnMobile').addEventListener('click', doLogout);
 
     /* ── 글자 수 카운터 (전역 노출) ── */
     window.updateCharCount = function (input, countId, max) {
@@ -584,11 +579,10 @@ elaborate"></textarea>
         const text = wordInput.value.trim();
         if (!text) { showBanner('aiBannerErr', '단어를 하나 이상 입력해주세요.'); return; }
 
-        const aiRes = await fetch('/api/ai/generate-word', {
+        const aiRes = await authFetch('/api/ai/generate-word', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token,
             'X-AI-Api-Key': apiKey,
           },
           body: JSON.stringify({ text, tag: [...selectedTags].join(',') }),
@@ -617,9 +611,9 @@ elaborate"></textarea>
           words:    convertedWords,
         };
 
-        const vocaRes = await fetch('/api/vocab', {
+        const vocaRes = await authFetch('/api/vocab', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
         const vocaData = await vocaRes.json().catch(() => ({}));
@@ -823,9 +817,9 @@ elaborate"></textarea>
       saveBtn.textContent = '저장 중...';
 
       try {
-        const res = await fetch('/api/vocab', {
+        const res = await authFetch('/api/vocab', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
         const data = await res.json().catch(() => ({}));

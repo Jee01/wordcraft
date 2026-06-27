@@ -366,9 +366,8 @@
         document.getElementById('darkModeToggle').checked = !light;
       });
 
-      function logout() { localStorage.removeItem('accessToken'); localStorage.removeItem('refreshToken'); window.location.href = 'login.html'; }
-      document.getElementById('logoutBtn').addEventListener('click', logout);
-      document.getElementById('logoutBtnMobile').addEventListener('click', logout);
+      document.getElementById('logoutBtn').addEventListener('click', doLogout);
+      document.getElementById('logoutBtnMobile').addEventListener('click', doLogout);
 
       /* Section navigation */
       document.querySelectorAll('.settings-nav__item').forEach(btn => {
@@ -383,8 +382,8 @@
       /* Load profile */
       async function loadProfile() {
         try {
-          const res = await fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + token } });
-          if (res.status === 401) { logout(); return; }
+          const res = await authFetch('/api/auth/me');
+          if (res.status === 401) { return; }
           const user = await res.json();
           document.getElementById('nickname').value = user.nickname || '';
           document.getElementById('email').value = user.email || '';
@@ -396,9 +395,9 @@
         const nickname = document.getElementById('nickname').value.trim();
         if (!nickname) { showAlert('profileAlert', 'error', '닉네임을 입력해주세요.'); return; }
         try {
-          const res = await fetch('/api/auth/update-nickname', {
+          const res = await authFetch('/api/auth/update-nickname', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ updateNickname: nickname }),
           });
           if (!res.ok) throw new Error();
@@ -489,9 +488,9 @@
         if (next.length < 8) { showAlert('pwAlert', 'error', '새 비밀번호는 8자 이상이어야 합니다.'); return; }
         if (next !== confirm) { showAlert('pwAlert', 'error', '새 비밀번호가 일치하지 않습니다.'); return; }
         try {
-          const res = await fetch('/api/auth/update-password', {
+          const res = await authFetch('/api/auth/update-password', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ password: current, updatePassword: next }),
           });
           if (!res.ok) { const d = await res.json(); throw new Error(d.message || '변경 실패'); }
@@ -508,7 +507,7 @@
       document.getElementById('deleteAllVocabsBtn').addEventListener('click', async () => {
         if (!confirm('정말로 모든 단어장을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
         try {
-          await fetch('/api/vocab/all', { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
+          await authFetch('/api/vocab/all', { method: 'DELETE' });
           showAlert('dangerAlert', 'success', '✅ 모든 단어장이 삭제되었습니다.');
         } catch {
           showAlert('dangerAlert', 'error', '삭제에 실패했습니다.');
@@ -521,13 +520,13 @@
         const pw = prompt('비밀번호를 입력하세요:');
         if (!pw) return;
         try {
-          const res = await fetch('/api/auth/delete', {
+          const res = await authFetch('/api/auth/delete', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ password: pw }),
           });
           if (!res.ok) { const d = await res.json(); throw new Error(d.message || '탈퇴 실패'); }
-          logout();
+          doLogout();
         } catch (err) {
           showAlert('dangerAlert', 'error', err.message || '계정 탈퇴에 실패했습니다.');
         }

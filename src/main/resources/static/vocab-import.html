@@ -295,10 +295,8 @@ The company implemented a significant policy change...
         localStorage.setItem('wc-theme', html.classList.contains('light') ? 'light' : 'dark');
       });
 
-      /* logout */
-      function logout() { localStorage.removeItem('accessToken'); localStorage.removeItem('refreshToken'); window.location.href = 'login.html'; }
-      document.getElementById('logoutBtn').addEventListener('click', logout);
-      document.getElementById('logoutBtnMobile').addEventListener('click', logout);
+      document.getElementById('logoutBtn').addEventListener('click', doLogout);
+      document.getElementById('logoutBtnMobile').addEventListener('click', doLogout);
 
       /* Tabs */
       let activeTab = 'text';
@@ -377,11 +375,10 @@ The company implemented a significant policy change...
           try {
             const tag = [...selectedTags].join(',');
 
-            const aiRes = await fetch('/api/ai/generate-word', {
+            const aiRes = await authFetch('/api/ai/generate-word', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token,
                 'X-AI-Api-Key': apiKey,
               },
               body: JSON.stringify({ text, tag }),
@@ -399,9 +396,9 @@ The company implemented a significant policy change...
               memoryTip: w.memoryTip || null,
             }));
 
-            const vocaRes = await fetch('/api/vocab', {
+            const vocaRes = await authFetch('/api/vocab', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ title, tag, isPublic: false, words: convertedWords }),
             });
             const vocaData = await vocaRes.json().catch(() => ({}));
@@ -436,9 +433,8 @@ The company implemented a significant policy change...
 
           try {
             const endpoint = activeTab === 'image' ? '/api/vocab/import/image' : '/api/vocab/import/file';
-            const res = await fetch(endpoint, {
+            const res = await authFetch(endpoint, {
               method: 'POST',
-              headers: { Authorization: 'Bearer ' + token },
               body: fd,
             });
             const data = await res.json();

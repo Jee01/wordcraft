@@ -28,15 +28,15 @@ public class UserController {
     }
     @PostMapping("/login")
     public ResponseEntity<TokenResponseDTO> login (@Valid @RequestBody LoginRequestDTO loginRequestDTO){
-        TokenResponseDTO tokenResponseDTO = userService.login(loginRequestDTO);
-        return ResponseEntity.ok(tokenResponseDTO);
+
+        return ResponseEntity.ok(userService.login(loginRequestDTO));
     }
 
     @PutMapping("/update-password")
     public ResponseEntity<Map<String, String>> updatePassword (@Valid @RequestBody UserPasswordUpdateDTO userPasswordUpdateDTO,
                                                        @AuthenticationPrincipal UserDetails userDetails){
-        String email = userDetails.getUsername();
-        userService.updateUserPassword(email, userPasswordUpdateDTO);
+
+        userService.updateUserPassword(getEmail(userDetails), userPasswordUpdateDTO);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -46,8 +46,8 @@ public class UserController {
     @PutMapping("/update-nickname")
     public ResponseEntity<Map<String, String>> updateNickname (@Valid @RequestBody UserNicknameUpdateDTO userNicknameUpdateDTO,
                                                                @AuthenticationPrincipal UserDetails userDetails){
-        String email = userDetails.getUsername();
-        userService.updateUserNickname(email, userNicknameUpdateDTO);
+
+        userService.updateUserNickname(getEmail(userDetails), userNicknameUpdateDTO);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -58,18 +58,25 @@ public class UserController {
     @PostMapping("/delete")
     public ResponseEntity<Map<String, String>> delete (@Valid @RequestBody UserDeleteDTO userDeleteDTO,
                                                        @AuthenticationPrincipal UserDetails userDetails){
-        String email = userDetails.getUsername();
-        userService.deleteUser(email, userDeleteDTO);
+
+        userService.deleteUser(getEmail(userDetails), userDeleteDTO);
         return ResponseEntity.ok(Map.of("message", "success delete"));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<Map<String, String>> logout(@AuthenticationPrincipal UserDetails userDetails){
-        return null;
+        userService.logout(getEmail(userDetails));
+        return ResponseEntity.ok(Map.of("message", "success logout"));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<Map<String, String>> refresh(@AuthenticationPrincipal UserDetails userDetails){
-        return null;
+    public ResponseEntity<Map<String, String>> refresh(@RequestBody Map<String, String> refreshMap){
+        String refreshToken = refreshMap.get("refreshToken");
+        String newAccessToken = userService.refreshToken(refreshToken);
+        return ResponseEntity.ok(Map.of("new accessToken", newAccessToken));
+    }
+
+    private String getEmail(UserDetails userDetails){
+        return userDetails.getUsername();
     }
 }
