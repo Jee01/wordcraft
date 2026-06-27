@@ -813,3 +813,81 @@ POST /api/community/{id}/like  (Authorization 헤더 포함)
 ```
 
 **주의:** 좋아요 버튼(`.like-btn`)이 `.pub-card__clickable` 내부에 위치하므로 `e.stopPropagation()` 없이는 카드 세부 페이지로 이동해버림.
+
+---
+
+## 인증 방식 쿠키 통일 + Google OAuth 연동 (2026-06-27)
+
+### 배경
+
+- 기존: JWT를 `localStorage`에 저장 → XSS 취약점
+- 변경: JWT를 `HttpOnly` 쿠키에 저장 → JS 접근 불가, XSS 방어
+- Google OAuth 로그인도 동일한 쿠키 방식 사용으로 통일
+
+### `main.js` 변경
+
+| 함수 | 변경 전 | 변경 후 |
+|---|---|---|
+| `authFetch()` | localStorage에서 토큰 읽어 `Authorization` 헤더 추가 | 헤더 제거, `credentials: 'include'` 추가 (쿠키 자동 첨부) |
+| `doLogout()` | localStorage 토큰 삭제 후 redirect | localStorage 삭제 제거, `/api/auth/logout` 호출만 유지 |
+| `requireAuth()` | 없음 (신규 추가) | `GET /api/auth/me` 호출 → 401이면 `login.html` 이동, 성공 시 `{ email, nickname }` 반환 |
+
+**`authFetch()` 401 처리 흐름 변경:**
+```
+변경 전: refreshToken을 localStorage에서 읽어 POST /api/auth/refresh { refreshToken } 전송
+변경 후: POST /api/auth/refresh credentials: 'include' (쿠키 자동 첨부, 바디 없음)
+         → 서버가 refresh_token 쿠키를 읽고 새 access_token 쿠키 발급
+```
+
+### `login.html` / `register.html` 변경
+
+| 항목 | 변경 내용 |
+|---|---|
+| 로그인 성공 처리 | `localStorage.setItem(accessToken/refreshToken)` 제거, 바로 `index.html` 이동 |
+| fetch 옵션 | `credentials: 'include'` 추가 |
+| GitHub 버튼 | 두 페이지 모두 삭제 |
+| Google 버튼 | `/oauth2/authorization/google` 으로 연결 |
+
+### 보호 페이지 인증 체크 변경
+
+**변경 전:**
+```js
+(function () {
+  const token = localStorage.getItem('accessToken');
+  if (!token) { window.location.href = 'login.html'; return; }
+  ...
+})();
+```
+
+**변경 후:**
+```js
+(async function () {
+  const user = await requireAuth();   // GET /api/auth/me → 401이면 자동 redirect
+  if (!user) return;
+  ...
+})();
+```
+
+**적용 파일:** `dashboard` / `community` / `community-vocab` / `settings` / `vocab` / `test` / `test-result` / `vocab-new` / `vocab-import`
+
+### `index.html` 네브 로그인 상태 변경
+
+```js
+// 변경 전
+const token = localStorage.getItem('accessToken');
+if (token) { /* 네브 전환 */ }
+function logout() { localStorage.removeItem(...); location.reload(); }
+
+// 변경 후
+fetch('/api/auth/me', { credentials: 'include' }).then(res => {
+  if (!res.ok) return;
+  /* 네브 전환 */
+});
+// 로그아웃 → doLogout() 사용
+```
+
+### 주의사항
+
+- `wc-theme`, `wc-key-*`, `wc-prefs` 등 **토큰 외 localStorage 항목은 그대로 유지**
+- 쿠키 방식 전환으로 **CSRF 취약점 새로 발생** → `CookieUtil.addTokenCookie()`에 `SameSite=Lax` 추가 필요 (배포 전)
+- `POST /api/auth/refresh` 요청 바디 없음 — refresh_token은 쿠키로 자동 전달됨
