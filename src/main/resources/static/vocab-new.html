@@ -201,6 +201,37 @@
       display: flex; align-items: center; gap: 6px;
       cursor: pointer; font-size: 0.88rem; color: var(--text-2); font-weight: 500;
     }
+
+    /* ── Detail rows (품사/뜻/예문 그룹) ── */
+    .detail-section-label { font-size: 0.8rem; font-weight: 700; color: var(--text-2); margin-top: 16px; margin-bottom: 8px; }
+    .detail-rows { display: flex; flex-direction: column; gap: 10px; }
+    .detail-row {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px;
+    }
+    .detail-row__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .detail-row__label { font-size: 0.73rem; font-weight: 700; color: var(--text-3); }
+    .detail-row__remove {
+      background: none; border: none; cursor: pointer; color: var(--text-3);
+      font-size: 0.78rem; padding: 2px 6px; border-radius: 6px; line-height: 1; font-family: var(--font);
+    }
+    .detail-row__remove:hover { color: #e55; background: rgba(255,80,80,.1); }
+    .pos-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .pos-chip {
+      padding: 4px 10px; border: 1.5px solid var(--border-2);
+      border-radius: 100px; font-size: 0.75rem; font-weight: 600;
+      color: var(--text-2); cursor: pointer; transition: all .15s; user-select: none;
+    }
+    .pos-chip:hover { border-color: var(--accent); color: var(--accent-2); }
+    .pos-chip.selected { border-color: var(--accent); color: var(--accent-2); background: var(--accent-dim); }
+    .add-detail-btn {
+      display: flex; align-items: center; gap: 6px; width: 100%;
+      background: none; border: 1px dashed var(--border-2); border-radius: var(--radius);
+      padding: 7px 12px; cursor: pointer; color: var(--text-3);
+      font-size: 0.8rem; font-family: var(--font); margin-top: 10px;
+      transition: border-color .2s, color .2s;
+    }
+    .add-detail-btn:hover { border-color: var(--accent); color: var(--accent-2); }
   </style>
 </head>
 <body>
@@ -634,13 +665,54 @@ elaborate"></textarea>
        수동 모드
     ════════════════════════════════ */
     let entryId = 0;
+    let detailId = 0;
     const entries = [];
+    const POS_OPTIONS = ['명사', '동사', '형용사', '부사', '전치사', '접속사', '구동사', '숙어', '기타'];
+
+    function createDetail() {
+      return { id: ++detailId, pos: '', meaning: '', example: '' };
+    }
 
     function createEntry() {
       const id = ++entryId;
-      const obj = { id, word: '', meaning: '', pos: '', ipa: '', example: '', memo: '' };
+      const obj = { id, word: '', ipa: '', memoryTip: '', details: [createDetail()] };
       entries.push(obj);
       return obj;
+    }
+
+    function renderDetailRow(entryObj, detail) {
+      const row = document.createElement('div');
+      row.className = 'detail-row';
+      row.dataset.did = detail.id;
+      row.innerHTML = `
+        <div class="detail-row__header">
+          <span class="detail-row__label">품사 선택</span>
+          <button class="detail-row__remove" type="button">✕ 삭제</button>
+        </div>
+        <div class="pos-chips">
+          ${POS_OPTIONS.map(p => `<div class="pos-chip${detail.pos === p ? ' selected' : ''}" data-pos="${p}">${p}</div>`).join('')}
+        </div>
+        <span class="entry-label">뜻 (한국어) <span class="required">*</span></span>
+        <input class="entry-input" placeholder="예: 시행하다, 구현하다" value="${escHtml(detail.meaning)}" maxlength="120" style="margin-bottom:8px;" />
+        <span class="entry-label">예문 (선택)</span>
+        <textarea class="entry-input" rows="2" placeholder="예: We need to implement this plan immediately." maxlength="300">${escHtml(detail.example)}</textarea>`;
+
+      row.querySelectorAll('.pos-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          row.querySelectorAll('.pos-chip').forEach(c => c.classList.remove('selected'));
+          chip.classList.add('selected');
+          detail.pos = chip.dataset.pos;
+        });
+      });
+      row.querySelector('input').addEventListener('input', e => { detail.meaning = e.target.value; refreshManualSidebar(); });
+      row.querySelector('textarea').addEventListener('input', e => { detail.example = e.target.value; });
+      row.querySelector('.detail-row__remove').addEventListener('click', () => {
+        if (entryObj.details.length <= 1) return;
+        entryObj.details = entryObj.details.filter(d => d.id !== detail.id);
+        row.remove();
+        refreshManualSidebar();
+      });
+      return row;
     }
 
     function renderEntry(obj) {
@@ -662,43 +734,30 @@ elaborate"></textarea>
             <input class="entry-input" placeholder="예: implement" data-field="word" value="${escHtml(obj.word)}" maxlength="80" />
           </div>
           <div>
-            <span class="entry-label">뜻 (한국어) <span class="required">*</span></span>
-            <input class="entry-input" placeholder="예: 시행하다, 구현하다" data-field="meaning" value="${escHtml(obj.meaning)}" maxlength="120" />
-          </div>
-          <div>
-            <span class="entry-label">품사</span>
-            <select class="entry-input" data-field="pos">
-              <option value="">선택 안 함</option>
-              <option value="명사">명사 (noun)</option>
-              <option value="동사">동사 (verb)</option>
-              <option value="형용사">형용사 (adjective)</option>
-              <option value="부사">부사 (adverb)</option>
-              <option value="전치사">전치사 (preposition)</option>
-              <option value="접속사">접속사 (conjunction)</option>
-              <option value="구동사">구동사 (phrasal verb)</option>
-              <option value="숙어">숙어 (idiom)</option>
-              <option value="기타">기타</option>
-            </select>
-          </div>
-          <div>
             <span class="entry-label">발음 기호 (선택)</span>
             <input class="entry-input" placeholder="예: /ˈɪmplɪmənt/" data-field="ipa" value="${escHtml(obj.ipa)}" maxlength="60" />
           </div>
           <div class="full">
-            <span class="entry-label">예문 (선택)</span>
-            <textarea class="entry-input" rows="2" placeholder="예: We need to implement this plan immediately." data-field="example" maxlength="300">${escHtml(obj.example)}</textarea>
-          </div>
-          <div class="full">
             <span class="entry-label">메모 / 기억 팁 (선택)</span>
-            <textarea class="entry-input" rows="2" placeholder="예: impl(안에 넣다) → 실행하다로 연상" data-field="memo" maxlength="200">${escHtml(obj.memo)}</textarea>
+            <textarea class="entry-input" rows="2" placeholder="예: impl(안에 넣다) → 실행하다로 연상" data-field="memoryTip" maxlength="200">${escHtml(obj.memoryTip)}</textarea>
           </div>
-        </div>`;
+        </div>
+        <div class="detail-section-label">뜻 · 품사 · 예문</div>
+        <div class="detail-rows" id="detail-rows-${obj.id}"></div>
+        <button class="add-detail-btn" type="button">+ 뜻 / 예문 추가</button>`;
 
-      el.querySelector('select[data-field="pos"]').value = obj.pos || '';
+      el.querySelector('[data-field="word"]').addEventListener('input', e => { obj.word = e.target.value; e.target.classList.remove('error'); refreshManualSidebar(); });
+      el.querySelector('[data-field="ipa"]').addEventListener('input', e => { obj.ipa = e.target.value; });
+      el.querySelector('[data-field="memoryTip"]').addEventListener('input', e => { obj.memoryTip = e.target.value; });
 
-      el.querySelectorAll('[data-field]').forEach(inp => {
-        inp.addEventListener('input',  () => { obj[inp.dataset.field] = inp.value; inp.classList.remove('error'); refreshManualSidebar(); });
-        inp.addEventListener('change', () => { obj[inp.dataset.field] = inp.value; refreshManualSidebar(); });
+      const detailRows = el.querySelector(`#detail-rows-${obj.id}`);
+      obj.details.forEach(d => detailRows.appendChild(renderDetailRow(obj, d)));
+
+      el.querySelector('.add-detail-btn').addEventListener('click', () => {
+        const d = createDetail();
+        obj.details.push(d);
+        detailRows.appendChild(renderDetailRow(obj, d));
+        refreshManualSidebar();
       });
 
       el.querySelector('[data-action="delete"]').addEventListener('click', () => deleteEntry(obj.id));
@@ -749,7 +808,7 @@ elaborate"></textarea>
     }
 
     function isReady(obj) {
-      return obj.word.trim().length > 0 && obj.meaning.trim().length > 0;
+      return obj.word.trim().length > 0 && obj.details.some(d => d.meaning.trim().length > 0);
     }
 
     function refreshManualSidebar() {
@@ -765,14 +824,17 @@ elaborate"></textarea>
         list.innerHTML = '<p style="font-size:0.82rem;color:var(--text-3);text-align:center;padding:24px 0;">단어(필수)와 뜻(필수)을 입력하면 여기에 표시됩니다.</p>';
         return;
       }
-      list.innerHTML = items.slice(0, 20).map((obj, i) => `
-        <div class="preview-item">
-          <div class="preview-item__num">${i + 1}</div>
-          <div>
-            <div class="preview-item__word">${escHtml(obj.word)}</div>
-            <div class="preview-item__meaning">${escHtml(obj.meaning)}</div>
-          </div>
-        </div>`).join('') +
+      list.innerHTML = items.slice(0, 20).map((obj, i) => {
+        const firstMeaning = obj.details.find(d => d.meaning.trim())?.meaning || '';
+        return `
+          <div class="preview-item">
+            <div class="preview-item__num">${i + 1}</div>
+            <div>
+              <div class="preview-item__word">${escHtml(obj.word)}</div>
+              <div class="preview-item__meaning">${escHtml(firstMeaning)}</div>
+            </div>
+          </div>`;
+      }).join('') +
         (items.length > 20 ? `<p style="font-size:.73rem;color:var(--text-3);text-align:center;padding:6px 0;">외 ${items.length - 20}개...</p>` : '');
     }
 
@@ -793,10 +855,8 @@ elaborate"></textarea>
       if (readyEntries.length === 0) { showBanner('manualBannerErr', '단어와 뜻이 모두 입력된 항목이 하나 이상 있어야 합니다.'); return; }
 
       entries.forEach(obj => {
-        const wordEl    = document.querySelector(`.word-entry[data-id="${obj.id}"] [data-field="word"]`);
-        const meaningEl = document.querySelector(`.word-entry[data-id="${obj.id}"] [data-field="meaning"]`);
-        if (wordEl    && !obj.word.trim())                       wordEl.classList.add('error');
-        if (meaningEl && !obj.meaning.trim() && obj.word.trim()) meaningEl.classList.add('error');
+        const wordEl = document.querySelector(`.word-entry[data-id="${obj.id}"] [data-field="word"]`);
+        if (wordEl && !obj.word.trim()) wordEl.classList.add('error');
       });
 
       const payload = {
@@ -805,11 +865,15 @@ elaborate"></textarea>
         isPublic: document.querySelector('input[name="visibility"]:checked').value === 'public',
         words: readyEntries.map(obj => ({
           word:      obj.word.trim(),
-          meaning:   obj.meaning.trim(),
-          pos:       obj.pos || null,
           ipa:       obj.ipa.trim() || null,
-          examples:  obj.example.trim() || null,
-          memoryTip: obj.memo.trim() || null,
+          memoryTip: obj.memoryTip.trim() || null,
+          vocaWordDetailDTOS: obj.details
+            .filter(d => d.meaning.trim())
+            .map(d => ({
+              pos:      d.pos || null,
+              meaning:  d.meaning.trim(),
+              examples: d.example.trim() || null,
+            })),
         })),
       };
 

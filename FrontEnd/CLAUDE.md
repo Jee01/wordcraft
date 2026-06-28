@@ -891,3 +891,94 @@ fetch('/api/auth/me', { credentials: 'include' }).then(res => {
 - `wc-theme`, `wc-key-*`, `wc-prefs` 등 **토큰 외 localStorage 항목은 그대로 유지**
 - 쿠키 방식 전환으로 **CSRF 취약점 새로 발생** → `CookieUtil.addTokenCookie()`에 `SameSite=Lax` 추가 필요 (배포 전)
 - `POST /api/auth/refresh` 요청 바디 없음 — refresh_token은 쿠키로 자동 전달됨
+
+---
+
+## 다중 품사/뜻/예문 구조 적용 (`vocab-new.html`, `vocab.html`, 2026-06-28)
+
+### 배경
+
+백엔드 `VocaWords` 엔티티에서 `pos`, `meanings`, `examples` 필드가 제거되고, 별도의 `VocaWordDetail` 엔티티(1:N)로 분리됨. 한 단어가 여러 품사/뜻/예문 조합을 가질 수 있는 구조로 변경.
+
+### `vocab-new.html` — 수동 입력 모드 변경
+
+**단어 항목(entry) 데이터 구조 변경:**
+
+| 변경 전 | 변경 후 |
+|---|---|
+| `{ id, word, meaning, pos, ipa, example, memo }` | `{ id, word, ipa, memoryTip, details: [{id, pos, meaning, example}] }` |
+
+**UI 변경:**
+- 뜻/품사/예문이 하나의 `detail-row` 그룹으로 묶임
+- 품사 선택: `<select>` 드롭다운 → 태그 칩 클릭 방식 (단일 선택)
+- `+ 뜻 / 예문 추가` 버튼으로 같은 단어에 여러 그룹 추가 가능
+- 그룹이 2개 이상일 때만 `✕ 삭제` 버튼으로 제거 가능 (최소 1개 유지)
+
+**신규 함수:**
+- `createDetail()` — detail 객체 생성
+- `renderDetailRow(entryObj, detail)` — detail 행 DOM 생성 및 이벤트 연결
+
+**저장 payload 변경:**
+
+```js
+// 변경 전
+words: [{ word, meaning, pos, ipa, examples, memoryTip }]
+
+// 변경 후
+words: [{ word, ipa, memoryTip, vocaWordDetailDTOS: [{ pos, meaning, examples }] }]
+```
+
+**`isReady()` 변경:**
+```js
+// 변경 전
+obj.word.trim() && obj.meaning.trim()
+// 변경 후
+obj.word.trim() && obj.details.some(d => d.meaning.trim())
+```
+
+---
+
+### `vocab.html` — 단어 카드 조회 변경
+
+**`wordCard()` 변경:**
+- `w.vocaWordDetailDTOS` 배열이 있으면 각 detail을 구분선으로 나눠 카드 내 표시
+- 각 detail 칸: 품사 뱃지(`.wc__detail-pos`) + 뜻(`.wc__detail-meaning`) + 예문(`.wc__detail-example`)
+- `vocaWordDetailDTOS`가 없는 경우 기존 `w.meaning` / `w.examples` 필드로 폴백
+
+**`filterWords()` 변경:**
+- 검색어 매칭 시 `w.meaning` 대신 `vocaWordDetailDTOS` 배열 전체를 순회
+
+---
+
+### `vocab.html` — 단어 수정 모드 변경
+
+**`enterEditMode()` 변경:**
+```js
+// 변경 전
+editWords = wordsData.map(w => ({ ...w }));
+// 변경 후
+editWords = wordsData.map(w => ({ ...w, details: (w.vocaWordDetailDTOS || []).map(d => ({ ...d })) }));
+```
+
+**`buildEditEntry()` 변경:**
+- 뜻/품사/예문 단일 입력 필드 제거
+- 조회 화면과 동일한 detail 행 구조 (`edit-detail-row`) 적용
+- `+ 뜻 / 예문 추가` 버튼으로 detail 행 추가 가능
+- 신규 함수 `renderEditDetailRow(wordObj, detail)` 추가
+
+**저장 payload 변경:**
+```js
+// 변경 전
+words: [{ word, ipa, pos, meanings, examples, memoryTip, learned }]
+// 변경 후
+words: [{ word, ipa, memoryTip, learned, vocaWordDetailDTOS: [{ pos, meaning, examples }] }]
+```
+
+**저장 후 즉시 반영 버그 수정:**
+```js
+// 변경 전 — wordCard()가 읽는 vocaWordDetailDTOS 없음
+wordsData = validWords;
+// 변경 후
+wordsData = validWords.map(w => ({ ...w, vocaWordDetailDTOS: w.details || [] }));
+```
+새로고침 없이도 수정 결과가 카드에 즉시 반영됨.

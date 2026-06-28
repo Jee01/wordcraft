@@ -175,6 +175,54 @@
     }
     .edit-tag-chip:hover { border-color: var(--accent); color: var(--accent-2); }
     .edit-tag-chip.selected { border-color: var(--accent); color: var(--accent-2); background: var(--accent-dim); }
+
+    /* ── Multi-detail word card ── */
+    .wc__details { display: flex; flex-direction: column; margin-bottom: 10px; }
+    .wc__detail { padding: 10px 0; }
+    .wc__detail + .wc__detail { border-top: 1px solid var(--border); }
+    .wc__detail-pos {
+      display: inline-block; font-size: 0.7rem; font-weight: 700;
+      color: var(--accent-2); background: var(--accent-dim);
+      border: 1px solid var(--accent); border-radius: 100px;
+      padding: 2px 8px; margin-bottom: 6px;
+    }
+    .wc__detail-meaning { font-size: 1rem; font-weight: 700; color: var(--accent-2); margin-bottom: 6px; }
+    .wc__detail-example {
+      font-size: 0.85rem; color: var(--text-2); font-style: italic;
+      padding: 6px 10px; background: var(--bg-4);
+      border-radius: 8px; border-left: 3px solid var(--accent);
+    }
+
+    /* ── Edit: detail rows ── */
+    .edit-detail-section-label { font-size: 0.8rem; font-weight: 700; color: var(--text-2); margin-top: 16px; margin-bottom: 8px; }
+    .edit-detail-rows { display: flex; flex-direction: column; gap: 10px; }
+    .edit-detail-row {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px;
+    }
+    .edit-detail-row__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .edit-detail-row__label { font-size: 0.73rem; font-weight: 700; color: var(--text-3); }
+    .edit-detail-row__remove {
+      background: none; border: none; cursor: pointer; color: var(--text-3);
+      font-size: 0.78rem; padding: 2px 6px; border-radius: 6px; line-height: 1; font-family: var(--font);
+    }
+    .edit-detail-row__remove:hover { color: #e55; background: rgba(255,80,80,.1); }
+    .edit-pos-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .edit-pos-chip {
+      padding: 4px 10px; border: 1.5px solid var(--border-2);
+      border-radius: 100px; font-size: 0.75rem; font-weight: 600;
+      color: var(--text-2); cursor: pointer; transition: all .15s; user-select: none;
+    }
+    .edit-pos-chip:hover { border-color: var(--accent); color: var(--accent-2); }
+    .edit-pos-chip.selected { border-color: var(--accent); color: var(--accent-2); background: var(--accent-dim); }
+    .add-edit-detail-btn {
+      display: flex; align-items: center; gap: 6px; width: 100%;
+      background: none; border: 1px dashed var(--border-2); border-radius: var(--radius);
+      padding: 7px 12px; cursor: pointer; color: var(--text-3);
+      font-size: 0.8rem; font-family: var(--font); margin-top: 10px;
+      transition: border-color .2s, color .2s;
+    }
+    .add-edit-detail-btn:hover { border-color: var(--accent); color: var(--accent-2); }
   </style>
 </head>
 <body>
@@ -314,9 +362,15 @@
             author: '나', updatedAt: '2026-06-06',
           };
           wordsData = [
-            { id: 1, word: 'implement', ipa: '/ˈɪmplɪmənt/', meaning: '시행하다 · 실행하다', pos: '동사', examples: 'The company will implement the new policy next quarter.', memoryTip: '💡 impl(안에) + ment → 안으로 채워 넣다 → 실행하다', learned: true },
-            { id: 2, word: 'significant', ipa: '/sɪɡˈnɪfɪkənt/', meaning: '중요한 · 상당한', pos: '형용사', examples: 'There was a significant improvement in test scores.', memoryTip: '💡 sign(신호) + ific → 신호를 보낼 만큼 중요한', learned: false },
-            { id: 3, word: 'constitute', ipa: '/ˈkɒnstɪtjuːt/', meaning: '구성하다 · ~에 해당하다', pos: '동사', examples: 'Women constitute 40% of the workforce.', memoryTip: '💡 con(함께) + stitute(세우다) → 함께 세워 구성하다', learned: false },
+            { id: 1, word: 'implement', ipa: '/ˈɪmplɪmənt/', memoryTip: '💡 impl(안에) + ment → 안으로 채워 넣다 → 실행하다', learned: true,
+              vocaWordDetailDTOS: [{ id: 1, pos: '동사', meaning: '시행하다 · 실행하다', examples: 'The company will implement the new policy next quarter.' }] },
+            { id: 2, word: 'significant', ipa: '/sɪɡˈnɪfɪkənt/', memoryTip: '💡 sign(신호) + ific → 신호를 보낼 만큼 중요한', learned: false,
+              vocaWordDetailDTOS: [{ id: 2, pos: '형용사', meaning: '중요한 · 상당한', examples: 'There was a significant improvement in test scores.' }] },
+            { id: 3, word: 'run', ipa: '/rʌn/', memoryTip: null, learned: false,
+              vocaWordDetailDTOS: [
+                { id: 3, pos: '동사', meaning: '달리다', examples: 'She runs every morning.' },
+                { id: 4, pos: '명사', meaning: '달리기', examples: 'I went for a run in the park.' },
+              ] },
           ];
           vocabData.learnedCount = wordsData.filter(w => w.learned).length;
           renderHeader(vocabData);
@@ -373,6 +427,19 @@
       }
 
       function wordCard(w) {
+        const details = w.vocaWordDetailDTOS || [];
+        const bodyHtml = details.length > 0
+          ? `<div class="wc__details">
+              ${details.map(d => `
+                <div class="wc__detail">
+                  ${d.pos ? `<span class="wc__detail-pos">${escHtml(d.pos)}</span>` : ''}
+                  <div class="wc__detail-meaning">${escHtml(d.meaning || '')}</div>
+                  ${d.examples ? `<div class="wc__detail-example">${escHtml(d.examples)}</div>` : ''}
+                </div>`).join('')}
+             </div>`
+          : `<div class="wc__meaning">${escHtml(w.meaning || '')}</div>
+             ${w.examples ? `<div class="wc__example">"${escHtml(w.examples)}"</div>` : ''}`;
+
         return `
           <div class="wc reveal">
             <div class="wc__top">
@@ -386,11 +453,9 @@
                 </button>
               </div>
             </div>
-            <div class="wc__meaning">${escHtml(w.meaning)}</div>
-            <div class="wc__example">"${escHtml(w.examples || '')}"</div>
+            ${bodyHtml}
             ${w.memoryTip ? `<div class="wc__tip">${escHtml(w.memoryTip)}</div>` : ''}
             <div class="wc__tags">
-              ${w.pos ? `<span class="tag tag--noun">${escHtml(w.pos)}</span>` : ''}
               ${w.learned ? '<span class="wc__learned-badge">✅ 학습 완료</span>' : ''}
             </div>
           </div>`;
@@ -417,9 +482,14 @@
       /* ── Edit mode ── */
       let editWords = [];
       let editSelectedTags = new Set();
+      let editDetailId = 0;
+      const EDIT_POS_OPTIONS = ['명사', '동사', '형용사', '부사', '전치사', '접속사', '구동사', '숙어', '기타'];
 
       function enterEditMode() {
-        editWords = wordsData.map(w => ({ ...w }));
+        editWords = wordsData.map(w => ({
+          ...w,
+          details: (w.vocaWordDetailDTOS || []).map(d => ({ ...d })),
+        }));
         editSelectedTags = new Set(vocabData.tags || []);
         renderEditHeader();
         renderEditWords();
@@ -519,6 +589,39 @@
         grid.appendChild(addBtn);
       }
 
+      function renderEditDetailRow(wordObj, detail) {
+        const row = document.createElement('div');
+        row.className = 'edit-detail-row';
+        row.innerHTML = `
+          <div class="edit-detail-row__header">
+            <span class="edit-detail-row__label">품사 선택</span>
+            <button class="edit-detail-row__remove" type="button">✕ 삭제</button>
+          </div>
+          <div class="edit-pos-chips">
+            ${EDIT_POS_OPTIONS.map(p => `<div class="edit-pos-chip${detail.pos === p ? ' selected' : ''}" data-pos="${p}">${p}</div>`).join('')}
+          </div>
+          <label class="edit-label">뜻 *</label>
+          <input class="edit-entry-input" placeholder="예: 시행하다, 구현하다" value="${escHtml(detail.meaning || '')}" maxlength="120" style="margin-bottom:8px;" />
+          <label class="edit-label">예문 (선택)</label>
+          <textarea class="edit-entry-input" rows="2" placeholder="예: We need to implement this plan." maxlength="300">${escHtml(detail.examples || '')}</textarea>`;
+
+        row.querySelectorAll('.edit-pos-chip').forEach(chip => {
+          chip.addEventListener('click', () => {
+            row.querySelectorAll('.edit-pos-chip').forEach(c => c.classList.remove('selected'));
+            chip.classList.add('selected');
+            detail.pos = chip.dataset.pos;
+          });
+        });
+        row.querySelector('input').addEventListener('input', e => { detail.meaning = e.target.value; });
+        row.querySelector('textarea').addEventListener('input', e => { detail.examples = e.target.value; });
+        row.querySelector('.edit-detail-row__remove').addEventListener('click', () => {
+          if (wordObj.details.length <= 1) return;
+          wordObj.details = wordObj.details.filter(d => d !== detail);
+          row.remove();
+        });
+        return row;
+      }
+
       function buildEditEntry(w, idx) {
         const el = document.createElement('div');
         el.className = 'edit-word-entry';
@@ -534,31 +637,32 @@
               <input class="edit-entry-input" data-field="word" value="${escHtml(w.word || '')}" placeholder="예: implement" />
             </div>
             <div>
-              <label class="edit-label">뜻 *</label>
-              <input class="edit-entry-input" data-field="meaning" value="${escHtml(w.meaning || '')}" placeholder="예: 시행하다" />
-            </div>
-            <div>
-              <label class="edit-label">품사</label>
-              <input class="edit-entry-input" data-field="pos" value="${escHtml(w.pos || '')}" placeholder="예: 동사" />
-            </div>
-            <div>
               <label class="edit-label">발음기호</label>
               <input class="edit-entry-input" data-field="ipa" value="${escHtml(w.ipa || '')}" placeholder="예: /ˈɪmplɪmənt/" />
-            </div>
-            <div class="full">
-              <label class="edit-label">예문</label>
-              <textarea class="edit-entry-input" data-field="examples" rows="2" placeholder="예: We need to implement this plan.">${escHtml(w.examples || '')}</textarea>
             </div>
             <div class="full">
               <label class="edit-label">기억 팁</label>
               <textarea class="edit-entry-input" data-field="memoryTip" rows="2" placeholder="예: impl(안에 넣다) → 실행하다">${escHtml(w.memoryTip || '')}</textarea>
             </div>
-          </div>`;
+          </div>
+          <div class="edit-detail-section-label">뜻 · 품사 · 예문</div>
+          <div class="edit-detail-rows" id="edit-detail-rows-${idx}"></div>
+          <button class="add-edit-detail-btn" type="button">+ 뜻 / 예문 추가</button>`;
 
-        el.querySelectorAll('[data-field]').forEach(inp => {
-          inp.addEventListener('input',  () => { editWords[idx][inp.dataset.field] = inp.value; });
-          inp.addEventListener('change', () => { editWords[idx][inp.dataset.field] = inp.value; });
+        el.querySelector('[data-field="word"]').addEventListener('input', e => { w.word = e.target.value; });
+        el.querySelector('[data-field="ipa"]').addEventListener('input', e => { w.ipa = e.target.value; });
+        el.querySelector('[data-field="memoryTip"]').addEventListener('input', e => { w.memoryTip = e.target.value; });
+
+        const detailRows = el.querySelector(`#edit-detail-rows-${idx}`);
+        if (!w.details || w.details.length === 0) w.details = [{ id: ++editDetailId, pos: '', meaning: '', examples: '' }];
+        w.details.forEach(d => detailRows.appendChild(renderEditDetailRow(w, d)));
+
+        el.querySelector('.add-edit-detail-btn').addEventListener('click', () => {
+          const d = { id: ++editDetailId, pos: '', meaning: '', examples: '' };
+          w.details.push(d);
+          detailRows.appendChild(renderEditDetailRow(w, d));
         });
+
         el.querySelector('[data-action="del"]').addEventListener('click', () => {
           if (editWords.length <= 1) { showEditBanner('error', '최소 1개의 단어가 필요합니다.'); return; }
           editWords.splice(idx, 1);
@@ -592,12 +696,16 @@
           updateAt: new Date().toISOString().slice(0, 19),
           words: validWords.map(w => ({
             word:      w.word.trim(),
-            ipa:       w.ipa       || '',
-            pos:       w.pos       || '',
-            meanings:  w.meaning   || '',
-            examples:  w.examples  || '',
-            memoryTip: w.memoryTip || '',
-            learned: w.learned ?? false
+            ipa:       w.ipa       || null,
+            memoryTip: w.memoryTip || null,
+            learned:   w.learned ?? false,
+            vocaWordDetailDTOS: (w.details || [])
+              .filter(d => (d.meaning || '').trim())
+              .map(d => ({
+                pos:      d.pos      || null,
+                meaning:  (d.meaning || '').trim(),
+                examples: d.examples || null,
+              })),
           }))
         };
 
@@ -617,7 +725,7 @@
           vocabData.title    = title;
           vocabData.tags     = [...editSelectedTags];
           vocabData.isPublic = isPublic;
-          wordsData = validWords;
+          wordsData = validWords.map(w => ({ ...w, vocaWordDetailDTOS: w.details || [] }));
 
           exitEditMode();
         } catch {
@@ -653,7 +761,9 @@
         const q = document.getElementById('searchInput').value.toLowerCase();
         const f = document.getElementById('filterSelect').value;
         return wordsData.filter(w => {
-          const matchQ = !q || w.word.toLowerCase().includes(q) || (w.meaning || '').toLowerCase().includes(q);
+          const details = w.vocaWordDetailDTOS || [];
+          const matchQ = !q || w.word.toLowerCase().includes(q) ||
+            details.some(d => (d.meaning || '').toLowerCase().includes(q));
           const matchF = f === 'all' || (f === 'learned' && w.learned) || (f === 'unlearned' && !w.learned);
           return matchQ && matchF;
         });

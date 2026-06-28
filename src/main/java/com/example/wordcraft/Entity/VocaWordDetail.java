@@ -8,7 +8,7 @@ import lombok.*;
 @Data
 
 @Entity
-@Table
+@Table(name="voca_word_detail")
 @Builder
 public class VocaWordDetail {
     @Id
