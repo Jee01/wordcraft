@@ -7,7 +7,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class VocaCreateRequestDTO {
+public class VocaRequestDTO {
     @NotBlank(message = "title")
     private String title;
     @NotBlank(message = "tag")

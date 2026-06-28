@@ -2,19 +2,15 @@ package com.example.wordcraft.Service.VocaService;
 
 import com.example.wordcraft.DTO.Voca.VocaDetailResponseDTO;
 import com.example.wordcraft.DTO.Voca.VocaResponseDTO;
+import com.example.wordcraft.DTO.Voca.VocaWordDetailDTO;
 import com.example.wordcraft.DTO.Voca.VocaWordRequestDTO;
-import com.example.wordcraft.Entity.CommunityLike;
-import com.example.wordcraft.Entity.Users;
-import com.example.wordcraft.Entity.VocaWords;
-import com.example.wordcraft.Entity.Vocabularies;
-import com.example.wordcraft.Repository.CommunityLikeRepository;
-import com.example.wordcraft.Repository.UserRepository;
-import com.example.wordcraft.Repository.VocaWordsRepository;
-import com.example.wordcraft.Repository.VocabulariesRepository;
+import com.example.wordcraft.Entity.*;
+import com.example.wordcraft.Repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -25,42 +21,51 @@ import java.util.stream.Collectors;
 public class CommunityService {
     private final VocabulariesRepository vocabulariesRepository;
     private final VocaWordsRepository vocaWordsRepository;
+    private final VocaWordDetailRepository vocaWordDetailRepository;
     private final UserRepository userRepository;
     private final CommunityLikeRepository communityLikeRepository;
 
     @Transactional
-    public void copyVocabularies(Long id, String email){
+    public void copyVocabularies(Long id, String email) {
         Users requestUser = userRepository.findByEmail(email)
-                .orElseThrow(()-> new RuntimeException("not found user"));
+                .orElseThrow(() -> new RuntimeException("not found user"));
 
-        Vocabularies orginVocabularies = vocabulariesRepository.findById(id)
+        Vocabularies originVocabularies = vocabulariesRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("vocabularies not found"));
-        List<VocaWords> originVocaWords = vocaWordsRepository.findByVocabularyId(orginVocabularies.getId());
 
         Vocabularies copyVocabularies = Vocabularies.builder()
-                .originId(orginVocabularies.getId())
-                .title(orginVocabularies.getTitle())
-                .tag(orginVocabularies.getTag())
-                .isPublic(orginVocabularies.getIsPublic())
+                .originId(originVocabularies.getId())
+                .title(originVocabularies.getTitle())
+                .tag(originVocabularies.getTag())
+                .isPublic(originVocabularies.getIsPublic())
                 .user(requestUser)
                 .build();
 
         Vocabularies saved = vocabulariesRepository.save(copyVocabularies);
 
-        List<VocaWords> copyWordsList = originVocaWords.stream()
-                .map(copyWords -> VocaWords.builder()
-                        .vocabulary(saved)
-                        .word(copyWords.getWord())
-                        .meanings(copyWords.getMeanings())
-                        .pos(copyWords.getPos())
-                        .ipa(copyWords.getIpa())
-                        .examples(copyWords.getExamples())
-                        .memoryTip(copyWords.getMemoryTip())
-                        .learned(false)
-                        .build())
-                .toList();
+        List<VocaWords> originVocaWords = vocaWordsRepository.findByVocabularyId(originVocabularies.getId());
+        List<VocaWordDetail> detailList = new ArrayList<>();
 
-        vocaWordsRepository.saveAll(copyWordsList);
+        for (VocaWords originWord : originVocaWords) {
+            VocaWords savedWord = vocaWordsRepository.save(VocaWords.builder()
+                    .vocabulary(saved)
+                    .word(originWord.getWord())
+                    .ipa(originWord.getIpa())
+                    .memoryTip(originWord.getMemoryTip())
+                    .learned(false)
+                    .build());
+
+            for (VocaWordDetail originDetail : vocaWordDetailRepository.findByVocaWords(originWord)) {
+                detailList.add(VocaWordDetail.builder()
+                        .vocaWords(savedWord)
+                        .pos(originDetail.getPos())
+                        .meanings(originDetail.getMeanings())
+                        .examples(originDetail.getExamples())
+                        .build());
+            }
+        }
+
+        vocaWordDetailRepository.saveAll(detailList);
     }
 
     public List<VocaResponseDTO> getVocaList(){
@@ -88,16 +93,26 @@ public class CommunityService {
         List<VocaWords> vocaWords = vocaWordsRepository.findByVocabularyId(vocabularies.getId());
 
         List<VocaWordRequestDTO> vocaWordRequestDTOS = vocaWords.stream()
-                .map(w->{
+                .map(w -> {
+                    List<VocaWordDetailDTO> details = vocaWordDetailRepository.findByVocaWords(w)
+                            .stream()
+                            .map(detail -> {
+                                VocaWordDetailDTO dto = new VocaWordDetailDTO();
+                                dto.setId(detail.getId());
+                                dto.setPos(detail.getPos());
+                                dto.setMeaning(detail.getMeanings());
+                                dto.setExamples(detail.getExamples());
+                                return dto;
+                            })
+                            .toList();
+
                     VocaWordRequestDTO dto = new VocaWordRequestDTO();
                     dto.setId(w.getId());
                     dto.setWord(w.getWord());
-                    dto.setMeaning(w.getMeanings());
-                    dto.setPos(w.getPos());
                     dto.setIpa(w.getIpa());
-                    dto.setExamples(w.getExamples());
                     dto.setMemoryTip(w.getMemoryTip());
                     dto.setLearned(w.getLearned());
+                    dto.setVocaWordDetailDTOS(details);
                     return dto;
                 })
                 .toList();

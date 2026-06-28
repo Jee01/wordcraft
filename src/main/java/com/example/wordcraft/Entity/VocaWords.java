@@ -4,9 +4,10 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
-@Setter
-@Getter
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
 
@@ -28,15 +29,6 @@ public class VocaWords {
     @Column(length = 100)
     private String ipa; // 발음기호
 
-    @Column(length = 50)
-    private String pos; // 품사
-
-    @Column(columnDefinition = "TEXT")
-    private String meanings; // JSON 문자열로 저장
-
-    @Column(columnDefinition = "TEXT")
-    private String examples; // JSON 문자열로 저장
-
     @Column(columnDefinition = "TEXT")
     private String memoryTip;
 
@@ -45,6 +37,9 @@ public class VocaWords {
 
     @Column(nullable = false)
     private Boolean learned;
+
+    @OneToMany(mappedBy = "vocaWords", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<VocaWordDetail> details = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {

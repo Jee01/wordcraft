@@ -5,9 +5,10 @@ import jakarta.validation.constraints.Email;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
-@Setter
-@Getter
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
 
@@ -37,6 +38,9 @@ public class Vocabularies {
 
     @Column(nullable = false) //작성 시간
     private LocalDateTime createdAt;
+
+    @OneToMany(mappedBy = "vocabulary", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<VocaWords> words = new ArrayList<>();
 
     @PrePersist //DB 저장 직전에 자동 실행
     public void prePersist() {

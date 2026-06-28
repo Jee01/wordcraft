@@ -20,9 +20,9 @@ public class VocaController {
     private final VocaService vocaService;
 
     @PostMapping
-    public ResponseEntity<Map<String, String>> createVoca(@Valid @RequestBody VocaCreateRequestDTO vocaCreateRequestDTO
+    public ResponseEntity<Map<String, String>> createVoca(@Valid @RequestBody VocaRequestDTO vocaRequestDTO
     ,@AuthenticationPrincipal UserDetails userDetails) {
-        vocaService.createVocabularies(vocaCreateRequestDTO, getEmail(userDetails));
+        vocaService.createVocabularies(vocaRequestDTO, getEmail(userDetails));
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -42,7 +42,7 @@ public class VocaController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Map<String, String>> updateVoca(@PathVariable Long id, @RequestBody VocabUpdateDTO vocabUpdateDTO
+    public ResponseEntity<Map<String, String>> updateVoca(@PathVariable Long id, @RequestBody VocaRequestDTO vocabUpdateDTO
             , @AuthenticationPrincipal UserDetails userDetails) {
         vocaService.updateVoca(getEmail(userDetails), id, vocabUpdateDTO);
         return ResponseEntity
