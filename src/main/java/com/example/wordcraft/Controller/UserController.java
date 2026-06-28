@@ -1,7 +1,10 @@
 package com.example.wordcraft.Controller;
 
 import com.example.wordcraft.DTO.Login.*;
-import com.example.wordcraft.Entity.Users;
+import com.example.wordcraft.DTO.Mail.EmailCodeVerifyDTO;
+import com.example.wordcraft.DTO.Mail.EmailVerifyRequestDTO;
+import com.example.wordcraft.DTO.User.*;
+import com.example.wordcraft.Service.UserService.EmailService;
 import com.example.wordcraft.Service.UserService.UserService;
 import com.example.wordcraft.Util.CookieUtil;
 import jakarta.servlet.http.Cookie;
@@ -22,11 +25,24 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+    private final EmailService emailService;
 
     //만료 15분
     private static final int ACCESS_TOKEN_EXPIRE_SECONDS = 60 * 15;
     //만료 7일
     private static final int REFRESH_TOKEN_EXPIRE_SECONDS = 60 * 60 * 24 * 7;
+
+    @PostMapping("/email")
+    public ResponseEntity<Map<String, String>> sendEmail(@Valid @RequestBody EmailVerifyRequestDTO emailVerifyRequestDTO){
+        emailService.sendEmail(emailVerifyRequestDTO);
+        return ResponseEntity.ok(Map.of("message", "success send email"));
+    }
+
+    @PostMapping("/email/verify")
+    public ResponseEntity<Boolean> verifyEmail(@Valid @RequestBody EmailCodeVerifyDTO emailCodeVerifyDTO){
+        Boolean verify = emailService.verifyCode(emailCodeVerifyDTO);
+        return ResponseEntity.ok(verify);
+    }
 
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> register(@Valid @RequestBody UserRegisterDTO userRegisterDTO) {

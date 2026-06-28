@@ -305,6 +305,43 @@
       opacity: 0.6;
       cursor: not-allowed;
     }
+
+    /* 이메일 인증 모달 */
+    .email-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .email-modal-overlay.show { display: flex; }
+    .email-modal {
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+    }
+    .email-modal h2 { font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; }
+    .email-modal p  { font-size: 0.85rem; color: var(--text-2); margin-bottom: 24px; line-height: 1.6; }
+    .email-modal p strong { color: var(--accent); }
+    .email-modal .form-group { margin-bottom: 12px; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .modal-actions .btn { flex: 1; justify-content: center; padding: 11px; font-size: 0.9rem; }
+    #verifyCodeBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .resend-link {
+      display: block;
+      text-align: center;
+      margin-top: 12px;
+      font-size: 0.8rem;
+      color: var(--text-3);
+      cursor: pointer;
+    }
+    .resend-link:hover { color: var(--accent); }
   </style>
 </head>
 <body>
@@ -464,6 +501,24 @@
 
 </div>
 
+<!-- 이메일 인증 모달 -->
+<div class="email-modal-overlay" id="emailModalOverlay">
+  <div class="email-modal">
+    <h2>이메일 인증</h2>
+    <p><strong id="modalEmailText"></strong>으로 전송된<br>6자리 인증 코드를 입력해주세요.</p>
+    <div class="form-group">
+      <input class="form-input" type="text" id="verifyCodeInput"
+             placeholder="인증 코드 6자리" maxlength="6" autocomplete="one-time-code" />
+      <div class="api-error" id="verifyError" style="margin-top:8px;"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn--ghost" type="button" id="cancelVerifyBtn">취소</button>
+      <button class="btn btn--primary" type="button" id="verifyCodeBtn">확인</button>
+    </div>
+    <span class="resend-link" id="resendBtn">인증 코드 재발송</span>
+  </div>
+</div>
+
 <script src="main.js"></script>
 <script>
   /* ===== Terms all-check ===== */
@@ -556,45 +611,137 @@
 
     if (!ok) return;
 
-    /* ===== POST /api/auth/register ===== */
     const submitBtn = document.getElementById('submitBtn');
     const apiError  = document.getElementById('apiError');
 
-    // 로딩 상태
+    // 1단계: 이메일 인증 코드 발송
     submitBtn.disabled = true;
-    submitBtn.textContent = '처리 중...';
+    submitBtn.textContent = '전송 중...';
     apiError.textContent = '';
     apiError.classList.remove('show');
 
-    fetch('/api/auth/register', {
+    fetch('/api/auth/email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nickname, email, password: pw }),
+      body: JSON.stringify({ email }),
     })
       .then(res => {
         if (!res.ok) return res.json().then(data => Promise.reject(data));
         return res.json();
       })
       .then(() => {
-        // 성공 → 로그인 페이지로 이동
-        window.location.href = 'login.html?registered=true';
+        // 발송 성공 → 모달 열기
+        document.getElementById('modalEmailText').textContent = email;
+        document.getElementById('emailModalOverlay').classList.add('show');
+        document.getElementById('verifyCodeInput').value = '';
+        document.getElementById('verifyError').classList.remove('show');
+        document.getElementById('verifyCodeInput').focus();
       })
       .catch(err => {
-        // 서버 에러 메시지 표시
-        const msg = err?.message || '회원가입에 실패했습니다. 잠시 후 다시 시도해주세요.';
+        const msg = err?.message || '인증 코드 전송에 실패했습니다.';
         apiError.textContent = msg;
         apiError.classList.add('show');
-
-        // 이메일 중복 에러 처리
-        if (err?.code === 'EMAIL_DUPLICATE') {
-          markInput('email', 'error');
-          showErr('emailError', '이미 사용 중인 이메일입니다.');
-        }
       })
       .finally(() => {
         submitBtn.disabled = false;
         submitBtn.textContent = '회원가입';
       });
+  });
+
+  // 취소 버튼
+  document.getElementById('cancelVerifyBtn').addEventListener('click', () => {
+    document.getElementById('emailModalOverlay').classList.remove('show');
+  });
+
+  // 재발송 버튼
+  document.getElementById('resendBtn').addEventListener('click', () => {
+    const email = document.getElementById('email').value.trim();
+    const resendBtn = document.getElementById('resendBtn');
+    resendBtn.textContent = '전송 중...';
+    fetch('/api/auth/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    }).then(() => {
+      resendBtn.textContent = '재발송 완료!';
+      document.getElementById('verifyCodeInput').value = '';
+      setTimeout(() => { resendBtn.textContent = '인증 코드 재발송'; }, 3000);
+    }).catch(() => {
+      resendBtn.textContent = '재발송 실패. 다시 시도해주세요.';
+      setTimeout(() => { resendBtn.textContent = '인증 코드 재발송'; }, 3000);
+    });
+  });
+
+  // 2단계: 코드 검증 → 회원가입
+  document.getElementById('verifyCodeBtn').addEventListener('click', () => {
+    const code       = document.getElementById('verifyCodeInput').value.trim();
+    const email      = document.getElementById('email').value.trim();
+    const verifyErr  = document.getElementById('verifyError');
+    const verifyBtn  = document.getElementById('verifyCodeBtn');
+
+    if (!code) {
+      verifyErr.textContent = '인증 코드를 입력해주세요.';
+      verifyErr.classList.add('show');
+      return;
+    }
+
+    verifyBtn.disabled = true;
+    verifyBtn.textContent = '확인 중...';
+    verifyErr.classList.remove('show');
+
+    fetch('/api/auth/email/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code }),
+    })
+      .then(res => res.json())
+      .then(verified => {
+        if (!verified) {
+          verifyErr.textContent = '인증 코드가 올바르지 않거나 만료되었습니다.';
+          verifyErr.classList.add('show');
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = '확인';
+          return;
+        }
+
+        // 3단계: 회원가입
+        verifyBtn.textContent = '가입 중...';
+        const nickname = document.getElementById('nickname').value.trim();
+        const pw       = document.getElementById('password').value;
+
+        fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nickname, email, password: pw }),
+        })
+          .then(res => {
+            if (!res.ok) return res.json().then(data => Promise.reject(data));
+            return res.json();
+          })
+          .then(() => {
+            window.location.href = 'login.html?registered=true';
+          })
+          .catch(err => {
+            document.getElementById('emailModalOverlay').classList.remove('show');
+            const apiError = document.getElementById('apiError');
+            const msg = err?.message || '회원가입에 실패했습니다.';
+            apiError.textContent = msg;
+            apiError.classList.add('show');
+            verifyBtn.disabled = false;
+            verifyBtn.textContent = '확인';
+          });
+      })
+      .catch(() => {
+        verifyErr.textContent = '인증에 실패했습니다. 다시 시도해주세요.';
+        verifyErr.classList.add('show');
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = '확인';
+      });
+  });
+
+  // 엔터키로 코드 확인
+  document.getElementById('verifyCodeInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('verifyCodeBtn').click();
   });
 
   /* Google 가입 */

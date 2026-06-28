@@ -1,4 +1,4 @@
-package com.example.wordcraft.DTO.Login;
+package com.example.wordcraft.DTO.User;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
