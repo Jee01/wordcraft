@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>단어장 보기 — WordCraft AI</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .page-wrap { padding-top: 80px; min-height: 100vh; background: var(--bg); }
+
+    .vocab-header { background: var(--bg-2); border-bottom: 1px solid var(--border); padding: 32px 0; }
+    .vocab-header__inner { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .vocab-header__left { flex: 1; min-width: 260px; }
+    .vocab-header__tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .vocab-header__title { font-size: 1.6rem; font-weight: 800; margin-bottom: 8px; }
+    .vocab-header__meta { display: flex; gap: 18px; font-size: 0.82rem; color: var(--text-3); flex-wrap: wrap; }
+    .vocab-header__desc { margin-top: 10px; font-size: 0.9rem; color: var(--text-2); }
+    .vocab-header__actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
+
+    .words-section { padding: 40px 0; }
+    .words-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 12px; flex-wrap: wrap; }
+    .words-header h2 { font-size: 1.1rem; font-weight: 700; }
+    .search-input {
+      background: var(--bg-3); border: 1.5px solid var(--border); border-radius: var(--radius);
+      padding: 7px 14px; color: var(--text); font-size: 0.85rem;
+      outline: none; width: 200px; transition: border-color .2s;
+    }
+    .search-input:focus { border-color: var(--accent); }
+
+    .word-cards-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    @media (max-width: 700px) { .word-cards-grid { grid-template-columns: 1fr; } }
+
+    .wc {
+      background: var(--bg-3); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 20px;
+      transition: border-color .2s, transform .2s;
+    }
+    .wc:hover { border-color: var(--border-2); transform: translateY(-2px); }
+    .wc__word { font-size: 1.3rem; font-weight: 800; color: var(--text); }
+    .wc__ipa { font-size: 0.82rem; color: var(--text-3); margin-top: 2px; margin-bottom: 12px; }
+    .wc__meaning { font-size: 1rem; font-weight: 700; color: var(--accent-2); margin-bottom: 10px; }
+    .wc__example {
+      font-size: 0.85rem; color: var(--text-2); font-style: italic;
+      padding: 8px 12px; background: var(--bg-4); border-radius: 8px;
+      border-left: 3px solid var(--accent); margin-bottom: 10px;
+    }
+    .wc__tip { font-size: 0.78rem; color: var(--text-3); }
+    .wc__tags { display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap; }
+
+    .loading { text-align: center; padding: 80px; color: var(--text-3); }
+    .loading__dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 12px; }
+    .loading__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: genBounce 1.2s infinite; }
+    .loading__dot:nth-child(2) { animation-delay: .15s; }
+    .loading__dot:nth-child(3) { animation-delay: .3s; }
+    @keyframes genBounce { 0%,80%,100% { transform:scale(.6);opacity:.4; } 40% { transform:scale(1);opacity:1; } }
+
+    .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--text-3); font-size: 0.85rem; text-decoration: none; margin-bottom: 20px; transition: color .2s; }
+    .back-link:hover { color: var(--accent-2); }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav__inner">
+      <a href="index.html" class="nav__logo">🔤 WordCraft<span>AI</span></a>
+      <ul class="nav__links">
+        <li><a href="dashboard.html">대시보드</a></li>
+        <li><a href="vocab-new.html">단어장 만들기</a></li>
+        <li><a href="community.html">커뮤니티</a></li>
+      </ul>
+      <div class="nav__actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="테마 전환">
+          <span class="theme-toggle__icon theme-toggle__icon--dark">🌙</span>
+          <span class="theme-toggle__icon theme-toggle__icon--light">☀️</span>
+        </button>
+        <a href="settings.html" class="btn btn--ghost">⚙️ 설정</a>
+        <button class="btn btn--ghost" id="logoutBtn">로그아웃</button>
+      </div>
+      <button class="nav__hamburger" id="hamburger" aria-label="메뉴">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="nav__mobile" id="mobileMenu">
+      <a href="dashboard.html">대시보드</a>
+      <a href="vocab-new.html">단어장 만들기</a>
+      <a href="community.html">커뮤니티</a>
+      <a href="settings.html">설정</a>
+      <button class="btn btn--ghost" id="logoutBtnMobile">로그아웃</button>
+    </div>
+  </nav>
+
+  <div class="page-wrap">
+    <div class="vocab-header" id="vocabHeader">
+      <div class="container">
+        <div class="loading">
+          <div class="loading__dots">
+            <div class="loading__dot"></div><div class="loading__dot"></div><div class="loading__dot"></div>
+          </div>
+          <p>단어장을 불러오는 중...</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="words-section">
+      <div class="container">
+        <div class="words-header">
+          <h2 id="wordsTitle">단어 목록</h2>
+          <input type="text" class="search-input" id="searchInput" placeholder="단어 검색..." />
+        </div>
+        <div class="word-cards-grid" id="wordCardsGrid">
+          <div class="loading" style="grid-column:1/-1">
+            <div class="loading__dots">
+              <div class="loading__dot"></div><div class="loading__dot"></div><div class="loading__dot"></div>
+            </div>
+            <p>단어를 불러오는 중...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+  <script>
+    (async function () {
+      const user = await requireAuth();
+      if (!user) return;
+
+      const html = document.documentElement;
+      const toggle = document.getElementById('themeToggle');
+      if (localStorage.getItem('wc-theme') === 'light') html.classList.add('light');
+      toggle.addEventListener('click', () => {
+        html.classList.toggle('light');
+        localStorage.setItem('wc-theme', html.classList.contains('light') ? 'light' : 'dark');
+      });
+
+      document.getElementById('logoutBtn').addEventListener('click', doLogout);
+      document.getElementById('logoutBtnMobile').addEventListener('click', doLogout);
+
+      const params = new URLSearchParams(window.location.search);
+      const vocabId = params.get('id');
+      if (!vocabId) { window.location.href = 'community.html'; return; }
+
+      let wordsData = [];
+
+      async function loadVocab() {
+        try {
+          const res = await authFetch(`/api/community/${vocabId}`);
+          if (res.status === 401) { return; }
+          if (res.status === 404) { window.location.href = 'community.html'; return; }
+          const vocabData = await res.json();
+          if (!Array.isArray(vocabData.tags)) {
+            vocabData.tags = vocabData.tag ? vocabData.tag.split(',').map(s => s.trim()).filter(Boolean) : [];
+          }
+          wordsData = vocabData.words || [];
+          renderHeader(vocabData);
+          renderWords(wordsData);
+          attachReveal();
+        } catch {
+          document.getElementById('vocabHeader').innerHTML = `
+            <div class="container">
+              <a href="community.html" class="back-link">← 커뮤니티로 돌아가기</a>
+              <p style="color:var(--text-3);">단어장을 불러올 수 없습니다.</p>
+            </div>`;
+          document.getElementById('wordCardsGrid').innerHTML = '';
+        }
+      }
+
+      function renderHeader(v) {
+        const tagHtml = (v.tags || []).map(t => `<span class="tag tag--${tagClass(t)}">${t}</span>`).join('');
+        document.getElementById('vocabHeader').innerHTML = `
+          <div class="container">
+            <a href="community.html" class="back-link">← 커뮤니티로 돌아가기</a>
+            <div class="vocab-header__inner">
+              <div class="vocab-header__left">
+                <div class="vocab-header__tags">${tagHtml}</div>
+                <div class="vocab-header__title">${escHtml(v.title)}</div>
+                <div class="vocab-header__meta">
+                  <span>📚 ${wordsData.length}단어</span>
+                  <span>🌐 공개 단어장</span>
+                  ${v.nickname ? `<span>by ${escHtml(v.nickname)}</span>` : ''}
+                </div>
+                ${v.description ? `<div class="vocab-header__desc">${escHtml(v.description)}</div>` : ''}
+              </div>
+              <div class="vocab-header__actions">
+                <button class="btn btn--primary" id="copyBtn">📋 내 단어장으로 복사</button>
+              </div>
+            </div>
+          </div>`;
+        document.getElementById('wordsTitle').textContent = `단어 목록 (${wordsData.length}개)`;
+        document.getElementById('copyBtn').addEventListener('click', copyVocab);
+      }
+
+      async function copyVocab() {
+        const btn = document.getElementById('copyBtn');
+        btn.disabled = true; btn.textContent = '복사 중...';
+        try {
+          const res = await authFetch(`/api/community/${vocabId}/copy`, { method: 'POST' });
+          if (res.ok) {
+            btn.textContent = '✅ 복사됨';
+            setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
+          } else {
+            btn.disabled = false; btn.textContent = '📋 내 단어장으로 복사';
+          }
+        } catch {
+          btn.disabled = false; btn.textContent = '📋 내 단어장으로 복사';
+        }
+      }
+
+      function renderWords(words) {
+        const grid = document.getElementById('wordCardsGrid');
+        if (words.length === 0) {
+          grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-3);">단어가 없습니다.</div>';
+          return;
+        }
+        grid.innerHTML = words.map(w => wordCard(w)).join('');
+      }
+
+      function wordCard(w) {
+        return `
+          <div class="wc reveal">
+            <div class="wc__word">${escHtml(w.word)}</div>
+            <div class="wc__ipa">${escHtml(w.ipa || '')}</div>
+            <div class="wc__meaning">${escHtml(w.meaning)}</div>
+            ${w.examples ? `<div class="wc__example">"${escHtml(w.examples)}"</div>` : ''}
+            ${w.memoryTip ? `<div class="wc__tip">${escHtml(w.memoryTip)}</div>` : ''}
+            <div class="wc__tags">
+              ${w.pos ? `<span class="tag tag--noun">${escHtml(w.pos)}</span>` : ''}
+            </div>
+          </div>`;
+      }
+
+      document.getElementById('searchInput').addEventListener('input', () => {
+        const q = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = q
+          ? wordsData.filter(w => w.word.toLowerCase().includes(q) || (w.meaning || '').toLowerCase().includes(q))
+          : wordsData;
+        renderWords(filtered);
+        attachReveal();
+      });
+
+      function attachReveal() {
+        setTimeout(() => {
+          const els = document.querySelectorAll('.reveal:not(.visible)');
+          els.forEach((el, i) => { el.style.transitionDelay = `${(i % 6) * 50}ms`; });
+          const obs = new IntersectionObserver(
+            entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
+            { threshold: 0.05 }
+          );
+          els.forEach(el => obs.observe(el));
+        }, 50);
+      }
+
+      function tagClass(t) {
+        if (t === 'TOEIC') return 'toeic'; if (t === 'TOEFL') return 'toefl';
+        if (t === '수능') return 'csat'; return 'noun';
+      }
+      function escHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+
+      loadVocab();
+    })();
+  </script>
+</body>
+</html>
