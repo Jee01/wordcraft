@@ -3,6 +3,7 @@ package com.example.wordcraft.Controller;
 import com.example.wordcraft.DTO.Login.*;
 import com.example.wordcraft.DTO.Mail.EmailCodeVerifyDTO;
 import com.example.wordcraft.DTO.Mail.EmailVerifyRequestDTO;
+import com.example.wordcraft.DTO.Mail.ForgotPasswordUpdateDTO;
 import com.example.wordcraft.DTO.User.*;
 import com.example.wordcraft.Service.UserService.EmailService;
 import com.example.wordcraft.Service.UserService.UserService;
@@ -32,6 +33,9 @@ public class UserController {
     //만료 7일
     private static final int REFRESH_TOKEN_EXPIRE_SECONDS = 60 * 60 * 24 * 7;
 
+    //만료 5분
+    private static final int ACCESS_TOKEN_FOR_RESET_PASSWORD = 60 * 5;
+
     @PostMapping("/email")
     public ResponseEntity<Map<String, String>> sendEmail(@Valid @RequestBody EmailVerifyRequestDTO emailVerifyRequestDTO){
         emailService.sendEmail(emailVerifyRequestDTO);
@@ -42,6 +46,34 @@ public class UserController {
     public ResponseEntity<Boolean> verifyEmail(@Valid @RequestBody EmailCodeVerifyDTO emailCodeVerifyDTO){
         Boolean verify = emailService.verifyCode(emailCodeVerifyDTO);
         return ResponseEntity.ok(verify);
+    }
+
+    @PostMapping("/email/forgotPassword")
+    public ResponseEntity<Map<String, String>> sendResetEmail(@Valid @RequestBody EmailVerifyRequestDTO emailVerifyRequestDTO){
+        if(userService.isValidEmail(emailVerifyRequestDTO.getEmail())){
+            emailService.sendEmail(emailVerifyRequestDTO);
+        }
+        return ResponseEntity.ok(Map.of("message", "success send email"));
+    }
+
+    @PostMapping("/email/verify/forgotPassword")
+    public ResponseEntity<Boolean> verifyResetEmail(@Valid @RequestBody EmailCodeVerifyDTO emailCodeVerifyDTO, HttpServletResponse response){
+        Boolean verify = emailService.verifyCode(emailCodeVerifyDTO);
+        if(verify){
+            TokenResponseResetDTO tokenResponseResetDTO = userService.ResetPasswordToken(emailCodeVerifyDTO.getEmail());
+            CookieUtil.addTokenCookie(response,"access_token",tokenResponseResetDTO.getAccessToken(),ACCESS_TOKEN_FOR_RESET_PASSWORD);
+        }
+        return ResponseEntity.ok(verify);
+    }
+
+    @PutMapping("/reset-password")
+    public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ForgotPasswordUpdateDTO forgotPasswordUpdateDTO,
+                                                             @AuthenticationPrincipal UserDetails userDetails){
+        userService.resetPassword(getEmail(userDetails), forgotPasswordUpdateDTO.getNewPassword());
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(Map.of("message", "success update password"));
     }
 
     @PostMapping("/register")

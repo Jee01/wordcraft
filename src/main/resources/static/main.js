@@ -54,7 +54,8 @@ async function requireAuth() {
     '#/vocab/new':    'vocab-new.html',
     '#/vocab/import': 'vocab-import.html',
     '#/community':    'community.html',
-    '#/settings':     'settings.html',
+    '#/settings':          'settings.html',
+    '#/forgot-password':   'forgot-password.html',
   };
 
   function navigate(hash) {

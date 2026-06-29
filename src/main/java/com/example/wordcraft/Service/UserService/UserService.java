@@ -1,6 +1,8 @@
 package com.example.wordcraft.Service.UserService;
 
 import com.example.wordcraft.DTO.Login.*;
+import com.example.wordcraft.DTO.Mail.EmailCodeVerifyDTO;
+import com.example.wordcraft.DTO.Mail.ForgotPasswordUpdateDTO;
 import com.example.wordcraft.DTO.User.*;
 import com.example.wordcraft.Entity.Users;
 import com.example.wordcraft.JWT.JwtTokenProvider;
@@ -111,6 +113,29 @@ public class UserService {
                 .email(users.getEmail())
                 .nickname(users.getNickname())
                 .build();
+    }
+
+    /*비밀번호 재설정 토큰 발급*/
+    public TokenResponseResetDTO ResetPasswordToken(String email) {
+        validUser(email);
+
+        String accessToken = jwtTokenProvider.generateAccessToken(email);
+
+        return TokenResponseResetDTO.builder()
+                .accessToken(accessToken)
+                .build();
+    }
+
+    @Transactional
+    public void resetPassword(String email, String newPassword) {
+        Users users = validUser(email);
+        users.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(users);
+    }
+
+
+    public Boolean isValidEmail(String email) {
+        return userRepository.findByEmail(email).isPresent();
     }
 
     private Users validUser(String email) {

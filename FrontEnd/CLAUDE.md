@@ -894,6 +894,51 @@ fetch('/api/auth/me', { credentials: 'include' }).then(res => {
 
 ---
 
+## 비밀번호 찾기 페이지 신규 생성 (`forgot-password.html`, 2026-06-29)
+
+### 신규 파일
+
+| 파일 | 위치 | 설명 |
+|---|---|---|
+| `forgot-password.html` | `src/main/resources/static/` | 비밀번호 찾기 전용 페이지 (인증 불필요) |
+
+### 기능 개요
+
+로그인 페이지의 "비밀번호 찾기" 링크 클릭 시 진입하는 3단계 플로우 페이지.
+
+### 3단계 플로우
+
+| 단계 | UI | 엔드포인트 | 요청 바디 |
+|---|---|---|---|
+| 1단계 | 이메일 입력 | `POST /api/auth/email/forgotPassword` | `{ email }` |
+| 2단계 | 인증 코드 입력 (3분 타이머 + 재발송) | `POST /api/auth/email/verify` | `{ email, code }` |
+| 3단계 | 새 비밀번호 설정 (강도 표시) | `POST /api/auth/update-password` | `{ email, newPassword }` |
+
+### 주요 UI 요소
+
+- **단계 표시기:** `.step-dot` (active/done 상태), `.step-line` (done 상태) — `goStep(n)` 함수로 전환
+- **3분 카운트다운 타이머:** `startTimer(180)` — 30초 이하 시 빨간색(`urgent`), 만료 시 재발송 버튼 활성화
+- **비밀번호 강도 바:** 5단계 (매우 약함 → 매우 강함), 색상 + 레이블 실시간 표시
+- **재발송 버튼:** 타이머 만료 전까지 `disabled`, 재발송 성공 시 타이머 리셋
+
+### 보안 처리
+
+이메일 존재 여부와 무관하게 항상 동일한 응답을 반환하도록 백엔드 설계됨 (이메일 열거 공격 방지).  
+프론트에서는 1단계 성공 시 항상 2단계로 이동하며 에러를 구분하지 않음.
+
+### login.html 변경
+
+비밀번호 찾기 링크: `href="#forgot"` → `href="forgot-password.html"`
+
+### main.js 변경
+
+`#/forgot-password` 라우트 추가:
+```js
+'#/forgot-password': 'forgot-password.html',
+```
+
+---
+
 ## 다중 품사/뜻/예문 구조 적용 (`vocab-new.html`, `vocab.html`, 2026-06-28)
 
 ### 배경
