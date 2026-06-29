@@ -384,6 +384,7 @@ elaborate"></textarea>
               <button class="add-word-btn" id="addWordBtn" style="margin-top:14px;" type="button">
                 + 단어 추가
               </button>
+              <button class="btn btn--primary btn-full" id="saveBtnBottom" type="button" style="margin-top:14px;">💾 단어장 저장</button>
             </div>
 
           </div>
@@ -845,6 +846,7 @@ elaborate"></textarea>
 
     /* 수동 저장 */
     const saveBtn = document.getElementById('saveBtn');
+    document.getElementById('saveBtnBottom').addEventListener('click', () => saveBtn.click());
     saveBtn.addEventListener('click', async () => {
       clearAllBanners();
       const title = document.getElementById('vocabTitle').value.trim();

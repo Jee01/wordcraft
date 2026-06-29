@@ -223,6 +223,29 @@
       transition: border-color .2s, color .2s;
     }
     .add-edit-detail-btn:hover { border-color: var(--accent); color: var(--accent-2); }
+
+    /* PDF Modal */
+    .pdf-section { margin-bottom: 20px; }
+    .pdf-section-title {
+      font-size: 0.78rem; font-weight: 700; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px;
+    }
+    .pdf-check-label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.9rem; color: var(--text-2); margin-bottom: 8px; cursor: pointer;
+    }
+    .pdf-check-label input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+    .pdf-pos-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pdf-radio-group { display: flex; flex-direction: column; gap: 8px; }
+    .pdf-radio-label { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-2); cursor: pointer; }
+    .pdf-radio-label input { accent-color: var(--accent); cursor: pointer; }
+
+    /* Print */
+    #pdfPrintArea { display: none; }
+    @media print {
+      body > *:not(#pdfPrintArea) { display: none !important; }
+      #pdfPrintArea { display: block !important; }
+    }
   </style>
 </head>
 <body>
@@ -282,6 +305,8 @@
               <option value="learned">학습 완료</option>
               <option value="unlearned">미학습</option>
             </select>
+            <button class="btn btn--ghost btn--sm" id="shuffleBtn">🔀 순서 섞기</button>
+            <button class="btn btn--ghost btn--sm" id="pdfBtn">📄 PDF 변환</button>
           </div>
         </div>
         <div class="word-cards-grid" id="wordCardsGrid">
@@ -304,6 +329,40 @@
       <div class="modal-actions">
         <button class="btn btn--ghost" id="deleteCancel">취소</button>
         <button class="btn btn--primary" style="background:#e55;border-color:#e55;" id="deleteConfirm">삭제하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF Modal -->
+  <div class="modal-backdrop" id="pdfModal">
+    <div class="modal" style="max-width:520px;">
+      <h3>📄 PDF 출력 옵션</h3>
+      <div class="pdf-section">
+        <div class="pdf-section-title">출력 옵션</div>
+        <label class="pdf-check-label" style="border-bottom:1px solid var(--border);padding-bottom:10px;margin-bottom:4px;">
+          <input type="checkbox" id="pdfHideAll"> <strong>전체 가리기</strong>
+        </label>
+        <label class="pdf-check-label"><input type="checkbox" id="pdfHideWord" class="pdf-hide-cb"> 단어 가리기 (빈칸으로 표시)</label>
+        <label class="pdf-check-label"><input type="checkbox" id="pdfHideMeaning" class="pdf-hide-cb"> 뜻 가리기 (빈칸으로 표시)</label>
+        <label class="pdf-check-label"><input type="checkbox" id="pdfHideIpa" class="pdf-hide-cb"> 발음기호 가리기</label>
+        <label class="pdf-check-label"><input type="checkbox" id="pdfHideExample" class="pdf-hide-cb"> 예문 가리기</label>
+        <label class="pdf-check-label"><input type="checkbox" id="pdfHideTip" class="pdf-hide-cb"> 기억 팁 가리기</label>
+      </div>
+      <div class="pdf-section">
+        <div class="pdf-section-title">품사 필터 <span style="font-weight:400;text-transform:none;letter-spacing:0;">(미선택 시 전체 출력)</span></div>
+        <div class="pdf-pos-grid" id="pdfPosFilter"></div>
+      </div>
+      <div class="pdf-section" style="margin-bottom:0;">
+        <div class="pdf-section-title">학습 여부</div>
+        <div class="pdf-radio-group">
+          <label class="pdf-radio-label"><input type="radio" name="pdfLearn" value="all" checked> 전체</label>
+          <label class="pdf-radio-label"><input type="radio" name="pdfLearn" value="learned"> 학습 완료만</label>
+          <label class="pdf-radio-label"><input type="radio" name="pdfLearn" value="unlearned"> 미학습만</label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn--ghost" id="pdfCancel">취소</button>
+        <button class="btn btn--primary" id="pdfConfirm">🖨️ PDF 출력</button>
       </div>
     </div>
   </div>
@@ -584,9 +643,17 @@
           refreshEditWordList();
         });
 
+        const saveBottomBtn = document.createElement('button');
+        saveBottomBtn.className = 'btn btn--primary';
+        saveBottomBtn.type = 'button';
+        saveBottomBtn.textContent = '💾 저장';
+        saveBottomBtn.style.cssText = 'width:100%;margin-top:8px;';
+        saveBottomBtn.addEventListener('click', saveEdit);
+
         grid.innerHTML = '';
         grid.appendChild(list);
         grid.appendChild(addBtn);
+        grid.appendChild(saveBottomBtn);
       }
 
       function renderEditDetailRow(wordObj, detail) {
@@ -790,6 +857,153 @@
       }
       function escHtml(s) {
         return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+
+      /* ── 순서 섞기 ── */
+      document.getElementById('shuffleBtn').addEventListener('click', () => {
+        for (let i = wordsData.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [wordsData[i], wordsData[j]] = [wordsData[j], wordsData[i]];
+        }
+        renderWords(filterWords());
+        attachReveal();
+      });
+
+      /* ── PDF 변환 ── */
+      document.getElementById('pdfBtn').addEventListener('click', openPdfModal);
+      document.getElementById('pdfCancel').addEventListener('click', () => {
+        document.getElementById('pdfModal').classList.remove('open');
+      });
+      document.getElementById('pdfConfirm').addEventListener('click', executePrint);
+
+      /* 전체 가리기 연동 */
+      document.getElementById('pdfHideAll').addEventListener('change', function () {
+        document.querySelectorAll('.pdf-hide-cb').forEach(cb => { cb.checked = this.checked; });
+      });
+      document.getElementById('pdfModal').addEventListener('change', function (e) {
+        if (e.target.classList.contains('pdf-hide-cb')) {
+          const cbs = [...document.querySelectorAll('.pdf-hide-cb')];
+          document.getElementById('pdfHideAll').checked = cbs.every(cb => cb.checked);
+        }
+      });
+
+      function openPdfModal() {
+        const posSet = new Set();
+        wordsData.forEach(w => (w.vocaWordDetailDTOS || []).forEach(d => { if (d.pos) posSet.add(d.pos); }));
+        const container = document.getElementById('pdfPosFilter');
+        if (posSet.size === 0) {
+          container.innerHTML = '<span style="color:var(--text-3);font-size:0.85rem;">품사 정보 없음 — 전체 출력됩니다</span>';
+        } else {
+          container.innerHTML = [...posSet].map(p =>
+            `<label class="pdf-check-label" style="margin-bottom:0;">
+               <input type="checkbox" class="pdf-pos-cb" value="${escHtml(p)}" checked> ${escHtml(p)}
+             </label>`
+          ).join('');
+        }
+        document.getElementById('pdfModal').classList.add('open');
+      }
+
+      function executePrint() {
+        document.getElementById('pdfModal').classList.remove('open');
+
+        const hideWord    = document.getElementById('pdfHideWord').checked;
+        const hideIpa     = document.getElementById('pdfHideIpa').checked;
+        const hideMeaning = document.getElementById('pdfHideMeaning').checked;
+        const hideExample = document.getElementById('pdfHideExample').checked;
+        const hideTip     = document.getElementById('pdfHideTip').checked;
+        const learnFilter = document.querySelector('input[name="pdfLearn"]:checked').value;
+        const allPosCbs   = [...document.querySelectorAll('.pdf-pos-cb')];
+        const selectedPos = new Set(allPosCbs.filter(cb => cb.checked).map(cb => cb.value));
+        const posFilterActive = allPosCbs.length > 0;
+
+        const printWords = wordsData.filter(w => {
+          if (learnFilter === 'learned'   && !w.learned) return false;
+          if (learnFilter === 'unlearned' &&  w.learned) return false;
+          if (posFilterActive && selectedPos.size > 0) {
+            const details = w.vocaWordDetailDTOS || [];
+            if (!details.some(d => selectedPos.has(d.pos))) return false;
+          }
+          return true;
+        });
+
+        if (printWords.length === 0) {
+          alert('출력할 단어가 없습니다. 필터 조건을 확인해주세요.');
+          return;
+        }
+
+        const blank = (w) =>
+          `<span style="display:inline-block;min-width:${w}px;border-bottom:2px solid #666;">&nbsp;</span>`;
+
+        const cardsHtml = printWords.map(w => {
+          const details = (w.vocaWordDetailDTOS || []).filter(d =>
+            !posFilterActive || selectedPos.size === 0 || selectedPos.has(d.pos)
+          );
+
+          const wordHtml = hideWord
+            ? blank(90)
+            : `<strong style="font-size:1.1rem;color:#111;">${escHtml(w.word)}</strong>`;
+
+          const ipaHtml = (!hideIpa && w.ipa)
+            ? `<div style="font-size:0.76rem;color:#888;margin-top:2px;">${escHtml(w.ipa)}</div>`
+            : '';
+
+          const learnedBadge = w.learned
+            ? `<span style="font-size:0.62rem;color:#2ca86e;border:1px solid #2ca86e;border-radius:20px;padding:1px 7px;margin-left:6px;">✅ 학습 완료</span>`
+            : '';
+
+          const detailsHtml = details.map((d, i) => {
+            const meaningHtml = hideMeaning ? blank(130) :
+              `<span style="font-size:0.9rem;font-weight:700;color:#333;">${escHtml(d.meaning || '')}</span>`;
+            return `
+              <div style="${i > 0 ? 'border-top:1px solid #eee;' : ''}padding:5px 0;">
+                ${d.pos ? `<span style="font-size:0.66rem;font-weight:700;color:#5a52e8;background:rgba(90,82,232,.08);border:1px solid #5a52e8;border-radius:20px;padding:1px 7px;margin-bottom:4px;display:inline-block;">${escHtml(d.pos)}</span>` : ''}
+                <div style="margin-top:3px;">${meaningHtml}</div>
+                ${(!hideExample && d.examples) ? `<div style="font-size:0.76rem;color:#666;font-style:italic;margin-top:3px;padding-left:8px;border-left:3px solid #5a52e8;">${escHtml(d.examples)}</div>` : ''}
+              </div>`;
+          }).join('');
+
+          const tipHtml = (!hideTip && w.memoryTip)
+            ? `<div style="font-size:0.7rem;color:#aaa;margin-top:6px;padding-top:6px;border-top:1px dashed #ddd;">${escHtml(w.memoryTip)}</div>`
+            : '';
+
+          return `
+            <div style="border:1px solid #ddd;border-radius:10px;padding:14px 16px;break-inside:avoid;page-break-inside:avoid;background:white;box-sizing:border-box;">
+              <div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:4px;margin-bottom:4px;">
+                ${wordHtml}${learnedBadge}
+              </div>
+              ${ipaHtml}
+              <div style="margin-top:6px;">${detailsHtml}</div>
+              ${tipHtml}
+            </div>`;
+        }).join('');
+
+        const optLabels = [
+          hideWord    ? '단어 가림'   : '',
+          hideIpa     ? '발음기호 가림' : '',
+          hideMeaning ? '뜻 가림'     : '',
+          hideExample ? '예문 가림'   : '',
+          hideTip     ? '팁 가림'     : '',
+          learnFilter === 'learned'   ? '학습 완료만' : '',
+          learnFilter === 'unlearned' ? '미학습만'   : '',
+        ].filter(Boolean).join(' · ');
+
+        const printArea = document.createElement('div');
+        printArea.id = 'pdfPrintArea';
+        printArea.innerHTML = `
+          <div style="font-family:sans-serif;max-width:900px;margin:0 auto;padding:20px;">
+            <div style="margin-bottom:18px;padding-bottom:12px;border-bottom:2px solid #222;">
+              <h1 style="font-size:1.4rem;font-weight:800;margin:0 0 4px;color:#111;">${escHtml(vocabData.title || '단어장')}</h1>
+              <div style="font-size:0.8rem;color:#666;">총 ${printWords.length}개 단어${optLabels ? ' · ' + optLabels : ''}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">${cardsHtml}</div>
+          </div>`;
+
+        document.body.appendChild(printArea);
+        window.addEventListener('afterprint', () => {
+          const el = document.getElementById('pdfPrintArea');
+          if (el) el.remove();
+        }, { once: true });
+        window.print();
       }
 
       loadVocab();

@@ -937,6 +937,33 @@ fetch('/api/auth/me', { credentials: 'include' }).then(res => {
 '#/forgot-password': 'forgot-password.html',
 ```
 
+### API 엔드포인트 확정
+
+| 단계 | 메서드 | 엔드포인트 | 요청 바디 |
+|---|---|---|---|
+| 1단계 (코드 발송) | `POST` | `/api/auth/email/forgotPassword` | `{ email }` |
+| 1단계 (재발송) | `POST` | `/api/auth/email/forgotPassword` | `{ email }` |
+| 2단계 (코드 인증) | `POST` | `/api/auth/email/verify/forgotPassword` | `{ email, code }` |
+| 3단계 (비밀번호 변경) | `PUT` | `/api/auth/reset-password` | `{ newPassword }` |
+
+### 인증 흐름
+
+```
+2단계 인증 성공
+    ↓
+서버가 5분짜리 access_token을 쿠키로 발급
+    ↓
+3단계 PUT /api/auth/reset-password 요청 시 쿠키 자동 첨부 (credentials: 'include')
+    ↓
+서버가 JWT에서 이메일 추출 후 비밀번호 변경
+```
+
+### 주의사항
+
+- 2단계 응답은 `Boolean` 타입 — `data === true` 로만 판정 (`|| res.ok` 사용 금지)
+- 3단계 바디에 이메일 불필요 — JWT 쿠키에서 서버가 추출
+- `/api/auth/reset-password`는 `permitAll` 제외 대상 (토큰 인증 필요)
+
 ---
 
 ## 다중 품사/뜻/예문 구조 적용 (`vocab-new.html`, `vocab.html`, 2026-06-28)
@@ -1027,3 +1054,67 @@ wordsData = validWords;
 wordsData = validWords.map(w => ({ ...w, vocaWordDetailDTOS: w.details || [] }));
 ```
 새로고침 없이도 수정 결과가 카드에 즉시 반영됨.
+
+---
+
+## 단어장 PDF 출력 · 순서 섞기 · 하단 저장 버튼 (`vocab.html`, `vocab-new.html`, 2026-06-29)
+
+### 순서 섞기 (`vocab.html`)
+
+단어 목록 컨트롤 영역에 **🔀 순서 섞기** 버튼 추가.  
+클릭 시 Fisher-Yates 알고리즘으로 `wordsData` 배열을 인플레이스 셔플 후 `renderWords()` 재호출.  
+현재 검색·학습 필터 상태는 유지된다 (`filterWords()` 경유).
+
+### PDF 변환 (`vocab.html`)
+
+단어 목록 컨트롤 영역에 **📄 PDF 변환** 버튼 추가. 클릭 시 옵션 모달 오픈.
+
+#### PDF 옵션 모달 구성
+
+| 섹션 | 요소 | 설명 |
+|---|---|---|
+| 출력 옵션 | 전체 가리기 (마스터 체크박스) | 하위 5개 가리기 체크박스를 일괄 토글 |
+| | 단어 가리기 | 단어 텍스트를 빈칸(밑줄)으로 대체 |
+| | 발음기호 가리기 | IPA 표기 숨김 |
+| | 뜻 가리기 | 뜻 텍스트를 빈칸(밑줄)으로 대체 |
+| | 예문 가리기 | 예문 영역 숨김 |
+| | 기억 팁 가리기 | memoryTip 영역 숨김 |
+| 품사 필터 | 체크박스 (동적) | 현재 단어장의 `vocaWordDetailDTOS[].pos`를 순회해 품사 목록 동적 생성. 미선택 시 전체 출력 |
+| 학습 여부 | 라디오 (3종) | 전체 / 학습 완료만 / 미학습만 |
+
+#### 전체 가리기 연동 규칙
+
+- 마스터 체크 → `.pdf-hide-cb` 전체 체크/해제
+- 개별 체크박스 변경 → 5개 모두 체크 시 마스터 자동 체크, 하나라도 해제 시 마스터 해제
+
+#### PDF 출력 방식
+
+```
+executePrint() 호출
+    ↓
+옵션에 따라 단어 필터링 (학습 여부 + 품사)
+    ↓
+인라인 스타일 카드 HTML 생성 (가리기 옵션 적용)
+    ↓
+<div id="pdfPrintArea"> 를 body에 appendChild
+    ↓
+window.print()  →  브라우저 인쇄 대화상자 (PDF로 저장)
+    ↓
+afterprint 이벤트에서 #pdfPrintArea 자동 제거
+```
+
+**@media print 규칙:** `body > *:not(#pdfPrintArea) { display: none }` — `#pdfPrintArea` 외 모든 요소를 인쇄 레이아웃에서 제거해 빈 첫 페이지 방지.
+
+PDF 헤더에는 단어장 제목, 총 단어 수, 적용된 옵션 요약(`단어 가림 · 뜻 가림` 등)이 표시됨.
+
+### 하단 저장 버튼
+
+#### `vocab.html` — 수정 모드
+
+`renderEditWords()` 내에서 `+ 단어 추가` 버튼 바로 아래에 `💾 저장` 버튼 동적 생성.  
+클릭 시 헤더의 `saveEdit` 함수를 직접 호출.
+
+#### `vocab-new.html` — 수동 입력 모드
+
+`#manualWordSection` 카드 내 `+ 단어 추가` 버튼 아래에 `💾 단어장 저장` 버튼 정적 추가 (`id="saveBtnBottom"`).  
+클릭 시 사이드바의 기존 `#saveBtn`을 `.click()` 트리거 — 저장 로직 중복 없이 재사용.
