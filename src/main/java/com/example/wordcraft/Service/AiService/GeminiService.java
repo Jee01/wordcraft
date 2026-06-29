@@ -51,21 +51,26 @@ public class GeminiService {
         return """
                 아래 단어들을 "%s" 맥락에서 각각 분석하여 JSON 배열 형식으로만 응답하세요.
                 마크다운 코드블록, 설명 텍스트 없이 JSON 배열만 출력하세요.
+                한 단어가 여러 품사로 쓰이는 경우 details 배열에 품사별로 구분하여 담으세요.
                 단어 목록: %s
 
                 [
                   {
                     "word": "분석한 단어",
                     "ipa": "/발음기호/",
-                    "pos": "품사 (Noun/Verb/Adjective/Adverb/Idiom/Compound Noun 중 하나)",
-                    "meanings": ["태그 맥락의 주요 의미1", "의미2"],
-                    "examples": [
-                      {"en": "영어 예문", "ko": "한국어 해석"}
-                    ],
-                    "memoryTip": "기억에 도움이 되는 어원이나 연상법. 간결하고 짧게. (예시 : impl(안에) + ment → 안으로 채워 넣다 → 실행하다)"
+                    "memoryTip": "기억에 도움이 되는 어원이나 연상법. 간결하고 짧게. (예시 : impl(안에) + ment → 안으로 채워 넣다 → 실행하다)",
+                    "details": [
+                      {
+                        "pos": "품사 (Noun/Verb/Adjective/Adverb/Idiom/Compound Noun 중 하나)",
+                        "meanings": ["%s 맥락의 주요 의미1", "의미2"],
+                        "examples": [
+                          {"en": "영어 예문", "ko": "한국어 해석"}
+                        ]
+                      }
+                    ]
                   }
                 ]
-                """.formatted(tag, text);
+                """.formatted(tag, text, tag);
     }
 
     private List<WordAnalysisDTO> parseResponse(String raw) {
@@ -126,19 +131,24 @@ public class GeminiService {
         return """
             이 문서에서 영어 단어들을 추출하고 "%s" 맥락에서 각각 분석하여 JSON 배열 형식으로만 응답하세요.
             마크다운 코드블록, 설명 텍스트 없이 JSON 배열만 출력하세요.
+            한 단어가 여러 품사로 쓰이는 경우 details 배열에 품사별로 구분하여 담으세요.
 
             [
               {
                 "word": "추출한 단어",
                 "ipa": "/발음기호/",
-                "pos": "품사 (Noun/Verb/Adjective/Adverb/Idiom/Compound Noun 중 하나)",
-                "meanings": ["태그 맥락의 주요 의미1", "의미2"],
-                "examples": [
-                  {"en": "영어 예문", "ko": "한국어 해석"}
-                ],
-                "memoryTip": "기억에 도움이 되는 어원이나 연상법"
+                "memoryTip": "기억에 도움이 되는 어원이나 연상법",
+                "details": [
+                  {
+                    "pos": "품사 (Noun/Verb/Adjective/Adverb/Idiom/Compound Noun 중 하나)",
+                    "meanings": ["%s 맥락의 주요 의미1", "의미2"],
+                    "examples": [
+                      {"en": "영어 예문", "ko": "한국어 해석"}
+                    ]
+                  }
+                ]
               }
             ]
-            """.formatted(tag);
+            """.formatted(tag, tag);
     }
 }

@@ -1,7 +1,11 @@
-package com.example.wordcraft.Entity;
+package com.example.wordcraft.Entity.Test;
 
+import com.example.wordcraft.Entity.Users;
+import com.example.wordcraft.Entity.Voca.Vocabularies;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,13 +28,24 @@ public class TestResult {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vocab_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Vocabularies vocabulary;
 
     @Column(nullable = false)
-    private Integer score; // 점수 (0~100)
+    private String testType;
 
-    @Column(columnDefinition = "TEXT")
-    private String wrongWords; // 틀린 단어 목록 (JSON 문자열)
+    @Column(nullable = false)
+    private Integer score;
+
+    @Column(nullable = false)
+    private Integer totalCount;
+
+    @Column(nullable = false)
+    private Integer wrongCount;
+
+    @OneToMany(mappedBy = "testResult", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<TestResultWrongWord> wrongWords = new ArrayList<>();
 
     @Column(updatable = false)
     private LocalDateTime takenAt;

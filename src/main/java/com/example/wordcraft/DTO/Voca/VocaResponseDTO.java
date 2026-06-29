@@ -1,6 +1,6 @@
 package com.example.wordcraft.DTO.Voca;
 
-import com.example.wordcraft.Entity.Vocabularies;
+import com.example.wordcraft.Entity.Voca.Vocabularies;
 import lombok.Builder;
 import lombok.Data;
 import java.time.LocalDateTime;

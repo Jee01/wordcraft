@@ -1,4 +1,4 @@
-package com.example.wordcraft.Entity;
+package com.example.wordcraft.Entity.Voca;
 
 import jakarta.persistence.*;
 import lombok.*;

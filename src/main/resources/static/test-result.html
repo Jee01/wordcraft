@@ -145,28 +145,12 @@
         };
       }
 
-      /* Save test history to server */
-      async function saveHistory() {
-        try {
-          await authFetch('/api/test/history', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              vocabId: testResults.vocabId,
-              testType: testResults.type,
-              score: testResults.score,
-              total: testResults.total,
-            }),
-          });
-        } catch { /* ignore */ }
-      }
-
       function render() {
-        const { score, total, results, type } = testResults;
-        const pct = total > 0 ? Math.round(score / total * 100) : 0;
-        const wrong = results.filter(r => !r.correct && !r.skipped);
-        const skipped = results.filter(r => r.skipped);
-        const correct = results.filter(r => r.correct);
+        const { score, total, correctCount, results, type, wrongWords } = testResults;
+        const pct = score; // test.html에서 이미 퍼센트로 저장
+        const wrong = wrongWords || [];
+        const skipped = (results || []).filter(r => r.skipped);
+        const correct = (results || []).filter(r => r.correct);
 
         let grade, gradeColor;
         if (pct >= 90) { grade = '🏆 최우수'; gradeColor = 'var(--success)'; }
@@ -174,14 +158,14 @@
         else if (pct >= 50) { grade = '👍 보통'; gradeColor = 'var(--warn)'; }
         else { grade = '💪 분발'; gradeColor = '#e55'; }
 
-        const typeLabel = { meaning: '뜻 맞추기', fill: '빈칸 채우기', flashcard: '플래시카드', spelling: '스펠링', word2meaning: '단어↔뜻 연결' }[type] || type;
+        const typeLabel = { meaning: '뜻 맞추기', fill: '빈칸 채우기', flashcard: '플래시카드', spelling: '스펠링' }[type] || type;
 
         document.getElementById('resultContainer').innerHTML = `
           <!-- Score -->
           <div class="score-section">
             <div class="score-circle" style="border-color:${gradeColor}; background: ${gradeColor}22;">
               <div class="score-circle__pct">${pct}%</div>
-              <div class="score-circle__label">${score} / ${total}</div>
+              <div class="score-circle__label">${correctCount != null ? correctCount : correct.length} / ${total}</div>
             </div>
             <div class="score-grade" style="color:${gradeColor}">${grade}</div>
             <div class="score-sub">${typeLabel} 테스트 완료</div>
@@ -222,10 +206,10 @@
               <div class="wrong-item">
                 <div class="wrong-item__icon">❌</div>
                 <div class="wrong-item__word">
-                  <strong>${escHtml(r.word.word)}</strong>
-                  <span>${escHtml(r.word.ipa || '')}</span>
+                  <strong>${escHtml(r.word)}</strong>
+                  <span>${escHtml(r.ipa || '')}</span>
                 </div>
-                <div class="wrong-item__meaning">${escHtml(r.word.meaning)}</div>
+                <div class="wrong-item__meaning">${escHtml(r.meaning || '')}</div>
               </div>`).join('')}
           </div>` : ''}
 
@@ -237,8 +221,8 @@
               <div class="correct-item">
                 <span>✅</span>
                 <div>
-                  <span>${escHtml(r.word.word)}</span><br/>
-                  <small>${escHtml(r.word.meaning)}</small>
+                  <span>${escHtml(r.word)}</span><br/>
+                  <small>${escHtml(r.meaning || '')}</small>
                 </div>
               </div>`).join('')}
           </div>` : ''}
@@ -258,7 +242,6 @@
       function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
       render();
-      saveHistory();
     })();
   </script>
 </body>

@@ -232,15 +232,15 @@
         }
 
         try {
-          const res2 = await authFetch('/api/test/history?limit=5');
+          const res2 = await authFetch('/api/test/recent');
           if (res2.ok) {
             const history = await res2.json();
             renderActivity(history);
           } else {
-            renderActivityFallback();
+            renderActivity([]);
           }
         } catch {
-          renderActivityFallback();
+          renderActivity([]);
         }
       }
 
@@ -317,48 +317,25 @@
         </div>`;
       }
 
+      const typeIcons = { MULTIPLE_CHOICE: '📝', FILL_BLANK: '✏️', FLASHCARD: '🃏', SPELLING: '🔡' };
+      const typeLabels = { MULTIPLE_CHOICE: '뜻 맞추기', FILL_BLANK: '빈칸 채우기', FLASHCARD: '플래시카드', SPELLING: '스펠링' };
+
       function renderActivity(history) {
-        if (!history || history.length === 0) { renderActivityFallback(); return; }
+        if (!history || history.length === 0) { actList.innerHTML = '<div style="color:var(--text-3);font-size:0.88rem;padding:16px 0;">아직 테스트 기록이 없습니다.</div>'; return; }
         actList.innerHTML = history.map(h => `
           <div class="activity-item">
-            <div class="activity-icon">📝</div>
+            <div class="activity-icon">${typeIcons[h.testType] || '📝'}</div>
             <div class="activity-text">
               <strong>${escHtml(h.vocabTitle)}</strong>
-              <span>${h.date} · ${h.testType}</span>
+              <span>${h.takenAt} · ${typeLabels[h.testType] || h.testType}</span>
             </div>
             <div class="activity-score">${h.score}%</div>
           </div>`).join('');
+
+        const avg = Math.round(history.reduce((sum, h) => sum + h.score, 0) / history.length);
+        document.getElementById('statAvgScore').textContent = avg + '%';
       }
 
-      function renderActivityFallback() {
-        actList.innerHTML = `
-          <div class="activity-item">
-            <div class="activity-icon">📝</div>
-            <div class="activity-text">
-              <strong>비즈니스 필수 동사 100</strong>
-              <span>2026-06-06 · 뜻 맞추기</span>
-            </div>
-            <div class="activity-score">87%</div>
-          </div>
-          <div class="activity-item">
-            <div class="activity-icon">⚡</div>
-            <div class="activity-text">
-              <strong>수능 빈출 형용사</strong>
-              <span>2026-06-05 · 빈칸 채우기</span>
-            </div>
-            <div class="activity-score">72%</div>
-          </div>
-          <div class="activity-item">
-            <div class="activity-icon">🃏</div>
-            <div class="activity-text">
-              <strong>토플 학술 어휘</strong>
-              <span>2026-06-04 · 플래시카드</span>
-            </div>
-            <div class="activity-score">91%</div>
-          </div>`;
-        document.getElementById('statStreak').textContent = '3';
-        document.getElementById('statAvgScore').textContent = '83%';
-      }
 
       function updateStats(vocabs) {
         document.getElementById('statVocabs').textContent = vocabs.length;

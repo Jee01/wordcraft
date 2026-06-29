@@ -1,7 +1,7 @@
-package com.example.wordcraft.Entity;
+package com.example.wordcraft.Entity.Voca;
 
+import com.example.wordcraft.Entity.Users;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
 import lombok.*;
 
 import java.time.LocalDateTime;

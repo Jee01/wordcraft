@@ -627,13 +627,15 @@ elaborate"></textarea>
         /* ── 응답 변환 후 단어장 저장 ── */
         const convertedWords = aiData.map(w => ({
           word:      w.word,
-          meaning:   Array.isArray(w.meanings) ? w.meanings.join(', ') : (w.meanings || ''),
-          pos:       w.pos       || null,
-          ipa:       w.ipa       || null,
-          examples:  Array.isArray(w.examples)
-                       ? w.examples.map(e => `${e.en} / ${e.ko}`).join('\n')
-                       : (w.examples || null),
+          ipa:       w.ipa || null,
           memoryTip: w.memoryTip || null,
+          vocaWordDetailDTOS: (w.details || []).map(d => ({
+            pos:      d.pos || null,
+            meaning:  Array.isArray(d.meanings) ? d.meanings.join(', ') : (d.meanings || ''),
+            examples: Array.isArray(d.examples)
+                        ? d.examples.map(e => `${e.en} / ${e.ko}`).join('\n')
+                        : (d.examples || null),
+          })),
         }));
 
         const payload = {

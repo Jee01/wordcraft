@@ -157,11 +157,6 @@
             <div class="type-card__name">스펠링</div>
             <div class="type-card__desc">뜻을 보고 단어 철자 입력</div>
           </div>
-          <div class="type-card reveal" data-type="word2meaning">
-            <div class="type-card__icon">🔀</div>
-            <div class="type-card__name">단어↔뜻 연결</div>
-            <div class="type-card__desc">단어와 뜻을 올바르게 연결</div>
-          </div>
         </div>
         <div class="start-area">
           <button class="btn btn--primary btn--lg" id="startBtn">테스트 시작하기</button>
@@ -210,7 +205,6 @@
       document.getElementById('logoutBtn').addEventListener('click', doLogout);
       document.getElementById('logoutBtnMobile').addEventListener('click', doLogout);
 
-      /* Reveal */
       setTimeout(() => {
         document.querySelectorAll('.reveal').forEach((el, i) => {
           el.style.transitionDelay = `${i * 60}ms`;
@@ -222,7 +216,6 @@
       const params = new URLSearchParams(window.location.search);
       const vocabId = params.get('vocabId');
 
-      /* Test type selection */
       let selectedType = 'meaning';
       document.querySelectorAll('.type-card').forEach(card => {
         card.addEventListener('click', () => {
@@ -232,82 +225,104 @@
         });
       });
 
-      /* Sample words for fallback */
-      const sampleWords = [
-        { id:1, word:'implement', ipa:'/ˈɪmplɪmənt/', meaning:'시행하다 · 실행하다', pos:'동사', example:'The company will ___ the new policy next quarter.' },
-        { id:2, word:'significant', ipa:'/sɪɡˈnɪfɪkənt/', meaning:'중요한 · 상당한', pos:'형용사', example:'There was a ___ improvement in test scores.' },
-        { id:3, word:'constitute', ipa:'/ˈkɒnstɪtjuːt/', meaning:'구성하다 · ~에 해당하다', pos:'동사', example:'Women ___ 40% of the workforce.' },
-        { id:4, word:'elaborate', ipa:'/ɪˈlæbərət/', meaning:'정교한 · 자세히 설명하다', pos:'형용사/동사', example:'She gave an ___ explanation.' },
-        { id:5, word:'paradigm', ipa:'/ˈpærədaɪm/', meaning:'패러다임 · 전형적인 예', pos:'명사', example:'This discovery created a new ___ in science.' },
-      ];
-
+      /* vocab words (flashcard/spelling용) */
       let words = [];
       let vocabTitle = '';
 
       async function loadVocab() {
-        if (!vocabId) { words = sampleWords; vocabTitle = '샘플 단어장'; updateVocabLabel(); return; }
+        if (!vocabId) { updateVocabLabel('샘플 단어장', 0); return; }
         try {
           const res = await authFetch(`/api/vocab/${vocabId}`);
-          if (res.status === 401) { return; }
+          if (!res.ok) return;
           const data = await res.json();
-          words = data.words || sampleWords;
+          words = data.words || [];
           vocabTitle = data.title || '';
-          updateVocabLabel();
-        } catch {
-          words = sampleWords; vocabTitle = '샘플 단어장'; updateVocabLabel();
-        }
+          updateVocabLabel(vocabTitle, words.length);
+        } catch { updateVocabLabel('단어장', 0); }
       }
 
-      function updateVocabLabel() {
-        document.getElementById('vocabInfoLabel').textContent = `${vocabTitle} · ${words.length}개 단어`;
+      function updateVocabLabel(title, count) {
+        document.getElementById('vocabInfoLabel').textContent = `${title} · ${count}개 단어`;
       }
 
       /* Quiz state */
       let questions = [];
       let qIdx = 0;
       let score = 0;
-      let results = [];
+      let results = [];       // [{ q, correct, skipped }]
+      let wrongCountMap = {}; // wordId -> 틀린 횟수
       let answered = false;
 
-      document.getElementById('startBtn').addEventListener('click', () => {
-        if (words.length === 0) return;
-        questions = shuffle([...words]);
-        qIdx = 0; score = 0; results = [];
-        document.getElementById('typeScreen').style.display = 'none';
-        document.getElementById('quizScreen').classList.add('active');
-        showQuestion();
+      document.getElementById('startBtn').addEventListener('click', async () => {
+        if (!vocabId) { alert('단어장을 선택해주세요.'); return; }
+        const btn = document.getElementById('startBtn');
+        btn.disabled = true; btn.textContent = '불러오는 중...';
+        try {
+          if (selectedType === 'meaning') {
+            const res = await authFetch(`/api/test/${vocabId}/multiple-choice`);
+            if (!res.ok) throw new Error(await res.text());
+            questions = await res.json();
+          } else if (selectedType === 'fill') {
+            const res = await authFetch(`/api/test/${vocabId}/fill-blank`);
+            if (!res.ok) throw new Error(await res.text());
+            questions = await res.json();
+          } else {
+            if (words.length === 0) { alert('단어장에 단어가 없습니다.'); btn.disabled=false; btn.textContent='테스트 시작하기'; return; }
+            questions = shuffle([...words]);
+          }
+          if (questions.length === 0) { alert('테스트에 사용할 수 있는 단어가 없습니다.'); btn.disabled=false; btn.textContent='테스트 시작하기'; return; }
+          qIdx = 0; score = 0; results = []; wrongCountMap = {};
+          document.getElementById('typeScreen').style.display = 'none';
+          document.getElementById('quizScreen').classList.add('active');
+          showQuestion();
+        } catch (e) {
+          alert('문제를 불러오는 데 실패했습니다: ' + e.message);
+          btn.disabled = false; btn.textContent = '테스트 시작하기';
+        }
       });
 
       document.getElementById('skipBtn').addEventListener('click', () => {
         if (!answered) {
-          results.push({ word: questions[qIdx], correct: false, skipped: true });
+          results.push({ q: questions[qIdx], correct: false, skipped: true });
           nextQuestion();
         }
       });
 
+      function trackResult(q, correct) {
+        results.push({ q, correct, skipped: false });
+        if (!correct) {
+          const id = q.wordId || q.id;
+          wrongCountMap[id] = (wrongCountMap[id] || 0) + 1;
+        }
+      }
+
       function showQuestion() {
         answered = false;
-        const w = questions[qIdx];
+        const q = questions[qIdx];
         const total = questions.length;
         document.getElementById('progressLabel').textContent = `${qIdx + 1} / ${total}`;
         document.getElementById('scoreLabel').textContent = `정답: ${score}개`;
         document.getElementById('progressFill').style.width = `${((qIdx + 1) / total) * 100}%`;
 
-        if (selectedType === 'flashcard') renderFlashcard(w);
-        else if (selectedType === 'fill') renderFill(w);
-        else if (selectedType === 'spelling') renderSpelling(w);
-        else renderMeaning(w);
+        if (selectedType === 'flashcard') renderFlashcard(q);
+        else if (selectedType === 'fill')  renderFill(q);
+        else if (selectedType === 'spelling') renderSpelling(q);
+        else renderMeaning(q);
       }
 
-      function renderMeaning(w) {
-        const distractors = words.filter(x => x.id !== w.id).map(x => x.meaning);
-        const choices = shuffle([w.meaning, ...shuffle(distractors).slice(0, 3)]);
+      /* ── 뜻 맞추기 ── */
+      function renderMeaning(q) {
+        const opts = shuffle([...q.options]);
         document.getElementById('quizCard').innerHTML = `
           <div class="quiz-type-badge">뜻 맞추기</div>
-          <div class="quiz-question">${escHtml(w.word)}</div>
-          <div class="quiz-ipa">${escHtml(w.ipa || '')}</div>
+          <div class="quiz-question">${escHtml(q.word)}</div>
+          <div class="quiz-ipa">${escHtml(q.ipa || '')}</div>
           <div class="choices">
-            ${choices.map((c, i) => `<button class="choice-btn" data-answer="${escAttr(c)}">${escHtml(c)}</button>`).join('')}
+            ${opts.map(o => `
+              <button class="choice-btn" data-detail-id="${o.detailId}">
+                ${o.pos ? `<span style="font-size:0.75rem;color:var(--text-3);margin-right:6px;">[${escHtml(o.pos)}]</span>` : ''}
+                ${escHtml(o.meaning)}
+              </button>`).join('')}
           </div>
           <div class="quiz-feedback" id="qFeedback"></div>
           <div class="quiz-nav">
@@ -318,24 +333,27 @@
           btn.addEventListener('click', () => {
             if (answered) return;
             answered = true;
-            const isCorrect = btn.dataset.answer === w.meaning;
+            const selectedId = Number(btn.dataset.detailId);
+            const isCorrect = selectedId === q.correctDetailId;
             document.querySelectorAll('.choice-btn').forEach(b => {
               b.disabled = true;
-              if (b.dataset.answer === w.meaning) b.classList.add('correct');
+              if (Number(b.dataset.detailId) === q.correctDetailId) b.classList.add('correct');
               else if (b === btn && !isCorrect) b.classList.add('wrong');
             });
             if (isCorrect) score++;
-            results.push({ word: w, correct: isCorrect });
-            showFeedback(isCorrect, w.meaning);
+            trackResult(q, isCorrect);
+            const correctOpt = q.options.find(o => o.detailId === q.correctDetailId);
+            showFeedback(isCorrect, correctOpt ? correctOpt.meaning : '');
           });
         });
       }
 
-      function renderFill(w) {
+      /* ── 빈칸 채우기 ── */
+      function renderFill(q) {
         document.getElementById('quizCard').innerHTML = `
           <div class="quiz-type-badge">빈칸 채우기</div>
-          <div class="quiz-question" style="font-size:1rem;font-weight:600;color:var(--text-2);margin-bottom:20px;">"${escHtml(w.example || w.word + '를 사용한 예문입니다.')}"</div>
-          <div class="quiz-ipa" style="margin-bottom:12px;">뜻 힌트: ${escHtml(w.meaning)}</div>
+          <div class="quiz-question" style="font-size:1rem;font-weight:600;color:var(--text-2);margin-bottom:20px;">"${escHtml(q.example)}"</div>
+          <div class="quiz-ipa" style="margin-bottom:12px;">뜻 힌트: ${q.pos ? `[${escHtml(q.pos)}] ` : ''}${escHtml(q.meaning)}</div>
           <input type="text" class="fill-input" id="fillInput" placeholder="단어를 입력하세요..." autocomplete="off" />
           <div class="quiz-feedback" id="qFeedback"></div>
           <div class="quiz-nav" style="margin-top:16px;">
@@ -344,26 +362,30 @@
           </div>`;
         const input = document.getElementById('fillInput');
         input.focus();
-        document.getElementById('submitFill').addEventListener('click', () => checkFill(w));
-        input.addEventListener('keydown', e => { if (e.key === 'Enter') checkFill(w); });
+        const check = () => {
+          if (answered) return;
+          answered = true;
+          const val = input.value.trim().toLowerCase();
+          const isCorrect = val === q.word.toLowerCase();
+          input.classList.add(isCorrect ? 'correct' : 'wrong');
+          input.disabled = true;
+          if (isCorrect) score++;
+          trackResult(q, isCorrect);
+          showFeedback(isCorrect, q.word);
+        };
+        document.getElementById('submitFill').addEventListener('click', check);
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
       }
 
-      function checkFill(w) {
-        if (answered) return;
-        answered = true;
-        const val = document.getElementById('fillInput').value.trim().toLowerCase();
-        const isCorrect = val === w.word.toLowerCase();
-        document.getElementById('fillInput').classList.add(isCorrect ? 'correct' : 'wrong');
-        document.getElementById('fillInput').disabled = true;
-        if (isCorrect) score++;
-        results.push({ word: w, correct: isCorrect });
-        showFeedback(isCorrect, w.word);
-      }
-
+      /* ── 스펠링 ── */
       function renderSpelling(w) {
+        const details = w.vocaWordDetailDTOS || [];
+        const hintHtml = details.length > 0
+          ? details.map(d => `${d.pos ? `[${escHtml(d.pos)}] ` : ''}${escHtml(d.meaning || '')}`).join(' / ')
+          : escHtml(w.word);
         document.getElementById('quizCard').innerHTML = `
           <div class="quiz-type-badge">스펠링</div>
-          <div class="quiz-question">${escHtml(w.meaning)}</div>
+          <div class="quiz-question" style="font-size:1.1rem;">${hintHtml}</div>
           <div class="quiz-ipa" style="margin-bottom:20px;">${escHtml(w.ipa || '')}</div>
           <input type="text" class="fill-input" id="fillInput" placeholder="영어 단어를 입력하세요..." autocomplete="off" />
           <div class="quiz-feedback" id="qFeedback"></div>
@@ -373,12 +395,33 @@
           </div>`;
         const input = document.getElementById('fillInput');
         input.focus();
-        document.getElementById('submitFill').addEventListener('click', () => checkFill(w));
-        input.addEventListener('keydown', e => { if (e.key === 'Enter') checkFill(w); });
+        const check = () => {
+          if (answered) return;
+          answered = true;
+          const val = input.value.trim().toLowerCase();
+          const isCorrect = val === w.word.toLowerCase();
+          input.classList.add(isCorrect ? 'correct' : 'wrong');
+          input.disabled = true;
+          if (isCorrect) score++;
+          trackResult(w, isCorrect);
+          showFeedback(isCorrect, w.word);
+        };
+        document.getElementById('submitFill').addEventListener('click', check);
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
       }
 
+      /* ── 플래시카드 ── */
       function renderFlashcard(w) {
         answered = false;
+        const details = w.vocaWordDetailDTOS || [];
+        const backContent = details.length > 0
+          ? details.map((d, i) => `
+              ${i > 0 ? '<hr style="border:none;border-top:1px solid var(--border);margin:8px 0"/>' : ''}
+              ${d.pos ? `<div style="font-size:0.75rem;color:var(--accent);font-weight:700;margin-bottom:4px;">[${escHtml(d.pos)}]</div>` : ''}
+              <div class="flashcard__meaning">${escHtml(d.meaning || '')}</div>
+              ${d.examples ? `<div class="flashcard__example">${escHtml(d.examples.split('\n')[0])}</div>` : ''}`).join('')
+          : '<div class="flashcard__meaning">뜻 없음</div>';
+
         document.getElementById('quizCard').innerHTML = `
           <div class="quiz-type-badge">플래시카드 — 클릭하면 뒤집힙니다</div>
           <div class="flashcard-wrap">
@@ -390,8 +433,7 @@
               </div>
               <div class="flashcard__face flashcard__back">
                 <div class="flashcard__hint">뜻</div>
-                <div class="flashcard__meaning">${escHtml(w.meaning)}</div>
-                <div class="flashcard__example">${escHtml(w.example || '')}</div>
+                ${backContent}
               </div>
             </div>
           </div>
@@ -407,12 +449,12 @@
         });
         document.getElementById('flashCorrect').addEventListener('click', () => {
           if (answered) return; answered = true;
-          score++; results.push({ word: w, correct: true });
+          score++; trackResult(w, true);
           setTimeout(nextQuestion, 300);
         });
         document.getElementById('flashWrong').addEventListener('click', () => {
           if (answered) return; answered = true;
-          results.push({ word: w, correct: false });
+          trackResult(w, false);
           setTimeout(nextQuestion, 300);
         });
       }
@@ -432,11 +474,89 @@
         showQuestion();
       }
 
-      function finishTest() {
-        /* Save results and navigate */
-        const testResults = { vocabId, type: selectedType, score, total: questions.length, results };
-        sessionStorage.setItem('testResults', JSON.stringify(testResults));
+      async function finishTest() {
+        const total = questions.length;
+        const pct = total > 0 ? Math.round(score / total * 100) : 0;
+
+        /* 틀린 단어 목록 구성 */
+        const wrongMap = {};
+        results.filter(r => !r.correct && !r.skipped).forEach(r => {
+          const q = r.q;
+          const wordId = q.wordId || q.id;
+          if (!wrongMap[wordId]) {
+            wrongMap[wordId] = {
+              wordId,
+              word: q.word,
+              ipa: q.ipa || null,
+              wrongCount: wrongCountMap[wordId] || 1,
+              details: buildDetails(q),
+              displayMeaning: buildDisplayMeaning(q),
+            };
+          }
+        });
+        const wrongWordsArr = Object.values(wrongMap);
+
+        /* sessionStorage — 결과 화면용 */
+        sessionStorage.setItem('testResults', JSON.stringify({
+          vocabId, type: selectedType, score: pct, total,
+          correctCount: score,
+          results: results.map(r => ({
+            word: r.q.word, ipa: r.q.ipa || null,
+            meaning: buildDisplayMeaning(r.q),
+            correct: r.correct, skipped: r.skipped,
+          })),
+          wrongWords: wrongWordsArr.map(w => ({
+            word: w.word, ipa: w.ipa, meaning: w.displayMeaning, wrongCount: w.wrongCount,
+          })),
+        }));
+
+        /* 서버 저장 */
+        if (vocabId) {
+          try {
+            await authFetch('/api/test/result', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                vocabId: parseInt(vocabId),
+                testType: selectedType.toUpperCase(),
+                totalCount: total,
+                score: pct,
+                wrongWords: wrongWordsArr.map(w => ({
+                  wordId: w.wordId, word: w.word, ipa: w.ipa,
+                  wrongCount: w.wrongCount, details: w.details,
+                })),
+              }),
+            });
+          } catch { /* 저장 실패해도 결과 화면은 진행 */ }
+        }
+
         window.location.href = `test-result.html?vocabId=${vocabId || ''}`;
+      }
+
+      function buildDetails(q) {
+        if (q.options && q.correctDetailId !== undefined) {
+          const c = q.options.find(o => o.detailId === q.correctDetailId);
+          return c ? [{ pos: c.pos, meanings: c.meaning, examples: null }] : [];
+        }
+        if (q.example !== undefined && q.detailId !== undefined) {
+          return [{ pos: q.pos, meanings: q.meaning, examples: q.example }];
+        }
+        if (q.vocaWordDetailDTOS) {
+          return q.vocaWordDetailDTOS.map(d => ({ pos: d.pos, meanings: d.meaning, examples: d.examples }));
+        }
+        return [];
+      }
+
+      function buildDisplayMeaning(q) {
+        if (q.options && q.correctDetailId !== undefined) {
+          const c = q.options.find(o => o.detailId === q.correctDetailId);
+          return c ? c.meaning : '';
+        }
+        if (q.meaning) return q.meaning;
+        if (q.vocaWordDetailDTOS && q.vocaWordDetailDTOS.length > 0) {
+          return q.vocaWordDetailDTOS.map(d => (d.pos ? `[${d.pos}] ` : '') + (d.meaning || '')).join(' / ');
+        }
+        return '';
       }
 
       function shuffle(arr) {
@@ -448,7 +568,6 @@
       }
 
       function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-      function escAttr(s) { return String(s).replace(/"/g,'&quot;'); }
 
       loadVocab();
     })();

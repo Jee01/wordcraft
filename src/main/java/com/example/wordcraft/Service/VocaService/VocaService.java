@@ -2,9 +2,9 @@ package com.example.wordcraft.Service.VocaService;
 
 import com.example.wordcraft.DTO.Voca.*;
 import com.example.wordcraft.Entity.Users;
-import com.example.wordcraft.Entity.VocaWordDetail;
-import com.example.wordcraft.Entity.VocaWords;
-import com.example.wordcraft.Entity.Vocabularies;
+import com.example.wordcraft.Entity.Voca.VocaWordDetail;
+import com.example.wordcraft.Entity.Voca.VocaWords;
+import com.example.wordcraft.Entity.Voca.Vocabularies;
 import com.example.wordcraft.Repository.UserRepository;
 import com.example.wordcraft.Repository.VocaWordDetailRepository;
 import com.example.wordcraft.Repository.VocaWordsRepository;

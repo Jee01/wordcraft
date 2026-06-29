@@ -1,7 +1,7 @@
 package com.example.wordcraft.Repository;
 
-import com.example.wordcraft.Entity.VocaWords;
-import com.example.wordcraft.Entity.Vocabularies;
+import com.example.wordcraft.Entity.Voca.VocaWords;
+import com.example.wordcraft.Entity.Voca.Vocabularies;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
