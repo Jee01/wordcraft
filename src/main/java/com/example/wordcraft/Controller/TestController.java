@@ -2,6 +2,7 @@ package com.example.wordcraft.Controller;
 
 import com.example.wordcraft.Service.Test.TestService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,4 +17,6 @@ public class TestController {
     public String test() {
         return null;
     }
+    @GetMapping
+    public String test2() {return null;}
 }
