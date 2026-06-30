@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -166,18 +166,18 @@
   <!-- NAV -->
   <nav class="nav">
     <div class="nav__inner">
-      <a href="index.html" class="nav__logo">🔤 WordCraft<span>AI</span></a>
+      <a href="/" class="nav__logo">🔤 WordCraft<span>AI</span></a>
       <ul class="nav__links">
-        <li><a href="dashboard.html">대시보드</a></li>
-        <li><a href="vocab-new.html">단어장 만들기</a></li>
-        <li><a href="community.html">커뮤니티</a></li>
+        <li><a href="/dashboard">대시보드</a></li>
+        <li><a href="/vocab-new">단어장 만들기</a></li>
+        <li><a href="/community">커뮤니티</a></li>
       </ul>
       <div class="nav__actions">
         <button class="theme-toggle" id="themeToggle" aria-label="테마 전환">
           <span class="theme-toggle__icon theme-toggle__icon--dark">🌙</span>
           <span class="theme-toggle__icon theme-toggle__icon--light">☀️</span>
         </button>
-        <a href="settings.html" class="btn btn--ghost">⚙️ 설정</a>
+        <a href="/settings" class="btn btn--ghost">⚙️ 설정</a>
         <button class="btn btn--ghost" id="logoutBtn">로그아웃</button>
       </div>
       <button class="nav__hamburger" id="hamburger" aria-label="메뉴">
@@ -185,10 +185,10 @@
       </button>
     </div>
     <div class="nav__mobile" id="mobileMenu">
-      <a href="dashboard.html">대시보드</a>
-      <a href="vocab-new.html">단어장 만들기</a>
-      <a href="community.html">커뮤니티</a>
-      <a href="settings.html">설정</a>
+      <a href="/dashboard">대시보드</a>
+      <a href="/vocab-new">단어장 만들기</a>
+      <a href="/community">커뮤니티</a>
+      <a href="/settings">설정</a>
       <button class="btn btn--ghost" id="logoutBtnMobile">로그아웃</button>
     </div>
   </nav>
@@ -331,7 +331,7 @@
 
     /* ── 인증 체크 ── */
     const token = localStorage.getItem('accessToken');
-    if (!token) { window.location.href = 'login.html'; return; }
+    if (!token) { window.location.href = '/login'; return; }
 
     /* ── 태그 선택 ── */
     const selectedTags = new Set();
@@ -564,7 +564,7 @@
         if (!res.ok) throw new Error(data.message || '저장에 실패했습니다.');
 
         showOk(`✅ 단어장이 저장되었습니다! (${readyEntries.length}개 단어)`);
-        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
+        setTimeout(() => { window.location.href = '/dashboard'; }, 1200);
       } catch (err) {
         showErr(err.message || '서버와 통신할 수 없습니다.');
       } finally {

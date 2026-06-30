@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -104,18 +104,18 @@
 
   <nav class="nav">
     <div class="nav__inner">
-      <a href="index.html" class="nav__logo">🔤 WordCraft<span>AI</span></a>
+      <a href="/" class="nav__logo">🔤 WordCraft<span>AI</span></a>
       <ul class="nav__links">
-        <li><a href="dashboard.html">대시보드</a></li>
-        <li><a href="vocab-new.html">단어장 만들기</a></li>
-        <li><a href="community.html">커뮤니티</a></li>
+        <li><a href="/dashboard">대시보드</a></li>
+        <li><a href="/vocab-new">단어장 만들기</a></li>
+        <li><a href="/community">커뮤니티</a></li>
       </ul>
       <div class="nav__actions">
         <button class="theme-toggle" id="themeToggle" aria-label="테마 전환">
           <span class="theme-toggle__icon theme-toggle__icon--dark">🌙</span>
           <span class="theme-toggle__icon theme-toggle__icon--light">☀️</span>
         </button>
-        <a href="settings.html" class="btn btn--ghost" style="color:var(--accent)">⚙️ 설정</a>
+        <a href="/settings" class="btn btn--ghost" style="color:var(--accent)">⚙️ 설정</a>
         <button class="btn btn--ghost" id="logoutBtn">로그아웃</button>
       </div>
       <button class="nav__hamburger" id="hamburger" aria-label="메뉴">
@@ -123,10 +123,10 @@
       </button>
     </div>
     <div class="nav__mobile" id="mobileMenu">
-      <a href="dashboard.html">대시보드</a>
-      <a href="vocab-new.html">단어장 만들기</a>
-      <a href="community.html">커뮤니티</a>
-      <a href="settings.html">설정</a>
+      <a href="/dashboard">대시보드</a>
+      <a href="/vocab-new">단어장 만들기</a>
+      <a href="/community">커뮤니티</a>
+      <a href="/settings">설정</a>
       <button class="btn btn--ghost" id="logoutBtnMobile">로그아웃</button>
     </div>
   </nav>
@@ -147,7 +147,6 @@
           <nav class="settings-nav">
             <button class="settings-nav__item active" data-section="profile">👤 프로필</button>
             <button class="settings-nav__item" data-section="ai-keys">🔑 AI API Key</button>
-            <button class="settings-nav__item" data-section="learning">📚 학습 설정</button>
             <button class="settings-nav__item" data-section="account">🔐 계정 보안</button>
             <button class="settings-nav__item" data-section="danger">⚠️ 위험 구역</button>
           </nav>
@@ -210,6 +209,7 @@
                 <!-- Google -->
                 <div class="form-group">
                   <label class="form-label">Google (Gemini)</label>
+                  <div style="font-size:0.78rem;color:var(--text-3);margin-bottom:6px;">현재 Gemini는 무료 티어 API (2.5 flash)만 지원합니다.</div>
                   <div class="key-row">
                     <input type="password" class="form-input" id="key-google" placeholder="AIza..." />
                     <button class="key-toggle" data-target="key-google">👁️</button>
@@ -224,72 +224,12 @@
                   <button class="btn btn--ghost" id="clearKeysBtn" style="border-color:#e55;color:#e55;">모두 삭제</button>
                 </div>
                 <div class="alert" id="keysAlert"></div>
-              </div>
-            </div>
 
-            <!-- Learning section -->
-            <div class="settings-section" id="section-learning">
-              <div class="section-card">
-                <div class="section-card__title">📚 학습 설정</div>
-
-                <div class="toggle-row">
-                  <div>
-                    <div class="toggle-row__label">다크 모드</div>
-                    <div class="toggle-row__desc">어두운 테마를 사용합니다.</div>
-                  </div>
-                  <label class="toggle-switch">
-                    <input type="checkbox" id="darkModeToggle" />
-                    <span class="toggle-slider"></span>
-                  </label>
+                <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+                  <a href="/gemini-guide" style="font-size:0.85rem;color:var(--accent-2);text-decoration:none;display:inline-flex;align-items:center;gap:5px;">
+                    📖 Gemini API Key 발급 방법 →
+                  </a>
                 </div>
-
-                <div class="toggle-row">
-                  <div>
-                    <div class="toggle-row__label">학습 시 발음기호 표시</div>
-                    <div class="toggle-row__desc">단어 카드에 IPA 발음기호를 함께 표시합니다.</div>
-                  </div>
-                  <label class="toggle-switch">
-                    <input type="checkbox" id="showIpaToggle" checked />
-                    <span class="toggle-slider"></span>
-                  </label>
-                </div>
-
-                <div class="toggle-row">
-                  <div>
-                    <div class="toggle-row__label">학습 시 기억팁 표시</div>
-                    <div class="toggle-row__desc">AI가 생성한 어원·기억팁을 함께 표시합니다.</div>
-                  </div>
-                  <label class="toggle-switch">
-                    <input type="checkbox" id="showTipToggle" checked />
-                    <span class="toggle-slider"></span>
-                  </label>
-                </div>
-
-                <div class="toggle-row">
-                  <div>
-                    <div class="toggle-row__label">테스트 후 틀린 단어 다시 출제</div>
-                    <div class="toggle-row__desc">오답 단어를 테스트 마지막에 다시 한번 출제합니다.</div>
-                  </div>
-                  <label class="toggle-switch">
-                    <input type="checkbox" id="retryWrongToggle" checked />
-                    <span class="toggle-slider"></span>
-                  </label>
-                </div>
-
-                <div class="form-group" style="margin-top:20px;">
-                  <label class="form-label">기본 테스트 유형</label>
-                  <select class="form-input" id="defaultTestType" style="cursor:pointer;">
-                    <option value="meaning">뜻 맞추기</option>
-                    <option value="fill">빈칸 채우기</option>
-                    <option value="flashcard">플래시카드</option>
-                    <option value="spelling">스펠링</option>
-                  </select>
-                </div>
-
-                <div class="btn-row">
-                  <button class="btn btn--primary" id="saveLearningBtn">저장하기</button>
-                </div>
-                <div class="alert" id="learningAlert"></div>
               </div>
             </div>
 
@@ -408,7 +348,7 @@
       });
 
       /* API Keys */
-      const KEY_MAP = { anthropic: 'wc-key-anthropic', openai: 'wc-key-openai', google: 'wc-key-google' };
+      const KEY_MAP = { google: 'wc-key-google' };
 
       function loadKeys() {
         Object.entries(KEY_MAP).forEach(([provider, storageKey]) => {
@@ -453,32 +393,6 @@
         showAlert('keysAlert', 'success', '✅ 모든 API Key가 삭제되었습니다.');
       });
 
-      /* Learning preferences */
-      function loadLearningPrefs() {
-        const prefs = JSON.parse(localStorage.getItem('wc-prefs') || '{}');
-        document.getElementById('darkModeToggle').checked = localStorage.getItem('wc-theme') !== 'light';
-        document.getElementById('showIpaToggle').checked = prefs.showIpa !== false;
-        document.getElementById('showTipToggle').checked = prefs.showTip !== false;
-        document.getElementById('retryWrongToggle').checked = prefs.retryWrong !== false;
-        if (prefs.defaultTestType) document.getElementById('defaultTestType').value = prefs.defaultTestType;
-      }
-
-      document.getElementById('darkModeToggle').addEventListener('change', e => {
-        html.classList.toggle('light', !e.target.checked);
-        localStorage.setItem('wc-theme', e.target.checked ? 'dark' : 'light');
-      });
-
-      document.getElementById('saveLearningBtn').addEventListener('click', () => {
-        const prefs = {
-          showIpa: document.getElementById('showIpaToggle').checked,
-          showTip: document.getElementById('showTipToggle').checked,
-          retryWrong: document.getElementById('retryWrongToggle').checked,
-          defaultTestType: document.getElementById('defaultTestType').value,
-        };
-        localStorage.setItem('wc-prefs', JSON.stringify(prefs));
-        showAlert('learningAlert', 'success', '✅ 학습 설정이 저장되었습니다.');
-      });
-
       /* Password change */
       document.getElementById('changePwBtn').addEventListener('click', async () => {
         const current = document.getElementById('currentPw').value;
@@ -507,10 +421,11 @@
       document.getElementById('deleteAllVocabsBtn').addEventListener('click', async () => {
         if (!confirm('정말로 모든 단어장을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
         try {
-          await authFetch('/api/vocab/all', { method: 'DELETE' });
+          const res = await authFetch('/api/vocab/my/all', { method: 'DELETE' });
+          if (!res.ok) { const d = await res.json(); throw new Error(d.message || '삭제 실패'); }
           showAlert('dangerAlert', 'success', '✅ 모든 단어장이 삭제되었습니다.');
-        } catch {
-          showAlert('dangerAlert', 'error', '삭제에 실패했습니다.');
+        } catch (err) {
+          showAlert('dangerAlert', 'error', err.message || '삭제에 실패했습니다.');
         }
       });
 
@@ -547,7 +462,6 @@
 
       loadProfile();
       loadKeys();
-      loadLearningPrefs();
     })();
   </script>
 </body>

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -352,11 +352,11 @@
   <div class="auth-panel">
     <div class="auth-panel__inner">
 
-      <a href="index.html" class="auth-logo">🔤 WordCraft<span>AI</span></a>
+      <a href="/" class="auth-logo">🔤 WordCraft<span>AI</span></a>
 
       <h1 class="auth-title">무료로 시작하기</h1>
       <p class="auth-sub">
-        이미 계정이 있으신가요? <a href="login.html">로그인</a>
+        이미 계정이 있으신가요? <a href="/login">로그인</a>
       </p>
 
       <form id="registerForm" novalidate>
@@ -399,7 +399,7 @@
         <div class="terms-group">
           <label class="form-check">
             <input type="checkbox" id="terms1" />
-            <span><a href="policy.html" target="_blank">이용약관 및 개인정보처리방침</a>에 동의합니다. (필수)</span>
+            <span><a href="/policy" target="_blank">이용약관 및 개인정보처리방침</a>에 동의합니다. (필수)</span>
           </label>
           <span class="terms-error" id="termsError">약관에 동의해주세요.</span>
         </div>
@@ -428,7 +428,7 @@
       </div>
 
       <p class="auth-footer-note">
-        가입하면 <a href="policy.html" target="_blank">이용약관 및 개인정보처리방침</a>에 동의하는 것으로 간주됩니다.
+        가입하면 <a href="/policy" target="_blank">이용약관 및 개인정보처리방침</a>에 동의하는 것으로 간주됩니다.
       </p>
 
     </div>
@@ -694,7 +694,7 @@
             return res.json();
           })
           .then(() => {
-            window.location.href = 'login.html?registered=true';
+            window.location.href = '/login?registered=true';
           })
           .catch(err => {
             document.getElementById('emailModalOverlay').classList.remove('show');

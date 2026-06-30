@@ -122,9 +122,14 @@ public class CommunityService {
                 })
                 .toList();
 
+        List<String> tags = (vocabularies.getTag() != null && !vocabularies.getTag().isBlank())
+                ? List.of(vocabularies.getTag().split(","))
+                : List.of();
+
         return VocaDetailResponseDTO.builder()
                 .id(vocabularies.getId())
                 .title(vocabularies.getTitle())
+                .tags(tags)
                 .isPublic(vocabularies.getIsPublic())
                 .wordCount(vocaWords.size())
                 .updatedAt(vocabularies.getCreatedAt().toString().substring(0, 10))

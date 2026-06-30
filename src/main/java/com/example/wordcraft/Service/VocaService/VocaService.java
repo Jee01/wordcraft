@@ -119,9 +119,14 @@ public class VocaService {
                 })
                 .toList();
 
+        List<String> tags = (vocabularies.getTag() != null && !vocabularies.getTag().isBlank())
+                ? List.of(vocabularies.getTag().split(","))
+                : List.of();
+
         return VocaDetailResponseDTO.builder()
                 .id(vocabularies.getId())
                 .title(vocabularies.getTitle())
+                .tags(tags)
                 .isPublic(vocabularies.getIsPublic())
                 .wordCount(vocaWords.size())
                 .updatedAt(vocabularies.getCreatedAt().toString().substring(0, 10))
@@ -190,6 +195,16 @@ public class VocaService {
         userValid(email, vocabularies);
 
         vocabulariesRepository.delete(vocabularies);
+    }
+
+    //단어장 전체 삭제
+    @Transactional
+    public void deleteAllMyVoca(String email) {
+        Users user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("존재하지 않는 사용자입니다."));
+
+        List<Vocabularies> myVocas = vocabulariesRepository.findAllByUserAndOriginIdIsNull(user);
+        vocabulariesRepository.deleteAll(myVocas);
     }
 
     private Vocabularies getVocabularies(Long id){

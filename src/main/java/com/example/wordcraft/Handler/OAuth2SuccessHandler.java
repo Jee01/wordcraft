@@ -44,6 +44,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         CookieUtil.addTokenCookie(response,"access_token",accessToken, ACCESS_TOKEN_EXPIRE_SECONDS);
         CookieUtil.addTokenCookie(response,"refresh_token",refreshToken, REFRESH_TOKEN_EXPIRE_SECONDS);
 
-        response.sendRedirect("http://localhost:8080/index.html");
+        response.sendRedirect("/index.html");
     }
 }

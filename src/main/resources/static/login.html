@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -289,11 +289,11 @@
   <div class="auth-panel">
     <div class="auth-panel__inner">
 
-      <a href="index.html" class="auth-logo">🔤 WordCraft<span>AI</span></a>
+      <a href="/" class="auth-logo">🔤 WordCraft<span>AI</span></a>
 
       <h1 class="auth-title">다시 오셨군요!</h1>
       <p class="auth-sub">
-        계정이 없으신가요? <a href="register.html">무료로 시작하기</a>
+        계정이 없으신가요? <a href="/register">무료로 시작하기</a>
       </p>
 
       <form id="loginForm" novalidate>
@@ -317,7 +317,7 @@
             <input type="checkbox" id="remember" />
             로그인 유지
           </label>
-          <a href="forgot-password.html" class="forgot-link">비밀번호 찾기</a>
+          <a href="/forgot-password" class="forgot-link">비밀번호 찾기</a>
         </div>
 
         <div class="api-error" id="apiError"></div>
@@ -344,7 +344,7 @@
       </div>
 
       <p class="auth-footer-note">
-        로그인하면 <a href="policy.html">이용약관 및 개인정보처리방침</a>에 동의하는 것으로 간주됩니다.
+        로그인하면 <a href="/policy">이용약관 및 개인정보처리방침</a>에 동의하는 것으로 간주됩니다.
       </p>
 
     </div>
@@ -443,7 +443,7 @@
         return;
       }
 
-      location.href = 'index.html';
+      location.href = '/';
 
     } catch (err) {
       apiError.textContent = '서버와 통신할 수 없습니다. 잠시 후 다시 시도해주세요.';

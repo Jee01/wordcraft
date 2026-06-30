@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -111,18 +111,18 @@
   <!-- NAV -->
   <nav class="nav">
     <div class="nav__inner">
-      <a href="index.html" class="nav__logo">🔤 WordCraft<span>AI</span></a>
+      <a href="/" class="nav__logo">🔤 WordCraft<span>AI</span></a>
       <ul class="nav__links">
-        <li><a href="dashboard.html" style="color:var(--text)">대시보드</a></li>
-        <li><a href="vocab-new.html">단어장 만들기</a></li>
-        <li><a href="community.html">커뮤니티</a></li>
+        <li><a href="/dashboard" style="color:var(--text)">대시보드</a></li>
+        <li><a href="/vocab-new">단어장 만들기</a></li>
+        <li><a href="/community">커뮤니티</a></li>
       </ul>
       <div class="nav__actions">
         <button class="theme-toggle" id="themeToggle" aria-label="테마 전환">
           <span class="theme-toggle__icon theme-toggle__icon--dark">🌙</span>
           <span class="theme-toggle__icon theme-toggle__icon--light">☀️</span>
         </button>
-        <a href="settings.html" class="btn btn--ghost">⚙️ 설정</a>
+        <a href="/settings" class="btn btn--ghost">⚙️ 설정</a>
         <button class="btn btn--ghost" id="logoutBtn">로그아웃</button>
       </div>
       <button class="nav__hamburger" id="hamburger" aria-label="메뉴">
@@ -130,10 +130,10 @@
       </button>
     </div>
     <div class="nav__mobile" id="mobileMenu">
-      <a href="dashboard.html">대시보드</a>
-      <a href="vocab-new.html">단어장 만들기</a>
-      <a href="community.html">커뮤니티</a>
-      <a href="settings.html">설정</a>
+      <a href="/dashboard">대시보드</a>
+      <a href="/vocab-new">단어장 만들기</a>
+      <a href="/community">커뮤니티</a>
+      <a href="/settings">설정</a>
       <button class="btn btn--ghost" id="logoutBtnMobile">로그아웃</button>
     </div>
   </nav>
@@ -170,7 +170,7 @@
         <div class="dash__header">
           <h2>내 단어장</h2>
           <div class="quick-actions">
-            <a href="vocab-new.html" class="btn btn--primary">+ 새 단어장</a>
+            <a href="/vocab-new" class="btn btn--primary">+ 새 단어장</a>
           </div>
         </div>
 
@@ -323,7 +323,7 @@
         const badgeClass = v.isPublic ? 'vocab-card__badge--public' : '';
         const badgeLabel = v.isPublic ? '공개' : '비공개';
         return `
-          <a class="vocab-card reveal" href="vocab.html?id=${v.id}">
+          <a class="vocab-card reveal" href="/vocab?id=${v.id}">
             <div class="vocab-card__top">
               <div class="vocab-card__title">${escHtml(v.title)}</div>
               <span class="vocab-card__badge ${badgeClass}">${badgeLabel}</span>
@@ -343,7 +343,7 @@
       }
 
       function newCard() {
-        return `<a class="vocab-card vocab-card--new" href="vocab-new.html">
+        return `<a class="vocab-card vocab-card--new" href="/vocab-new">
           <div class="new-icon">➕</div>
           <span>새 단어장 만들기</span>
         </a>`;
@@ -354,7 +354,7 @@
           <div class="empty-state__icon">📚</div>
           <h3>아직 단어장이 없어요</h3>
           <p>첫 단어장을 만들고 AI로 단어를 채워보세요!</p>
-          <a href="vocab-new.html" class="btn btn--primary">단어장 만들기</a>
+          <a href="/vocab-new" class="btn btn--primary">단어장 만들기</a>
         </div>`;
       }
 

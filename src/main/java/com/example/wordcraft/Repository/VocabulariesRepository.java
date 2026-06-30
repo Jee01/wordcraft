@@ -14,4 +14,5 @@ public interface VocabulariesRepository extends JpaRepository<Vocabularies, Long
     @Query("SELECT v FROM Vocabularies v WHERE v.isPublic = :isPublic AND v.originId IS NULL")
     List<Vocabularies> findAllByIsPublic(@Param("isPublic") boolean isPublic);
     List<Vocabularies> findAllByUser(Users user);
+    List<Vocabularies> findAllByUserAndOriginIdIsNull(Users user);
 }

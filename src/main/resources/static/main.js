@@ -1,4 +1,4 @@
-/* ===== AUTH UTILS ===== */
+﻿/* ===== AUTH UTILS ===== */
 async function authFetch(url, options = {}) {
   const opts = {
     ...options,
@@ -35,12 +35,12 @@ async function doLogout() {
       credentials: 'include',
     });
   } catch { /* 네트워크 오류여도 로그아웃 진행 */ }
-  window.location.href = 'login.html';
+  window.location.href = '/login';
 }
 
 async function requireAuth() {
   const res = await fetch('/api/auth/me', { credentials: 'include' });
-  if (!res.ok) { window.location.href = 'login.html'; return null; }
+  if (!res.ok) { window.location.href = '/login'; return null; }
   return res.json(); // { email, nickname }
 }
 

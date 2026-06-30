@@ -67,6 +67,12 @@ public class VocaController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/my/all")
+    public ResponseEntity<Void> deleteAllMyVoca(@AuthenticationPrincipal UserDetails userDetails) {
+        vocaService.deleteAllMyVoca(getEmail(userDetails));
+        return ResponseEntity.noContent().build();
+    }
+
     private String getEmail(UserDetails userDetails) {
         return userDetails.getUsername();
     }

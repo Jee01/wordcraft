@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -253,18 +253,18 @@
   <!-- NAV -->
   <nav class="nav">
     <div class="nav__inner">
-      <a href="index.html" class="nav__logo">🔤 WordCraft<span>AI</span></a>
+      <a href="/" class="nav__logo">🔤 WordCraft<span>AI</span></a>
       <ul class="nav__links">
-        <li><a href="dashboard.html">대시보드</a></li>
-        <li><a href="vocab-new.html">단어장 만들기</a></li>
-        <li><a href="community.html">커뮤니티</a></li>
+        <li><a href="/dashboard">대시보드</a></li>
+        <li><a href="/vocab-new">단어장 만들기</a></li>
+        <li><a href="/community">커뮤니티</a></li>
       </ul>
       <div class="nav__actions">
         <button class="theme-toggle" id="themeToggle" aria-label="테마 전환">
           <span class="theme-toggle__icon theme-toggle__icon--dark">🌙</span>
           <span class="theme-toggle__icon theme-toggle__icon--light">☀️</span>
         </button>
-        <a href="settings.html" class="btn btn--ghost">⚙️ 설정</a>
+        <a href="/settings" class="btn btn--ghost">⚙️ 설정</a>
         <button class="btn btn--ghost" id="logoutBtn">로그아웃</button>
       </div>
       <button class="nav__hamburger" id="hamburger" aria-label="메뉴">
@@ -272,10 +272,10 @@
       </button>
     </div>
     <div class="nav__mobile" id="mobileMenu">
-      <a href="dashboard.html">대시보드</a>
-      <a href="vocab-new.html">단어장 만들기</a>
-      <a href="community.html">커뮤니티</a>
-      <a href="settings.html">설정</a>
+      <a href="/dashboard">대시보드</a>
+      <a href="/vocab-new">단어장 만들기</a>
+      <a href="/community">커뮤니티</a>
+      <a href="/settings">설정</a>
       <button class="btn btn--ghost" id="logoutBtnMobile">로그아웃</button>
     </div>
   </nav>
@@ -389,7 +389,7 @@
       /* Get vocab ID from query string */
       const params = new URLSearchParams(window.location.search);
       const vocabId = params.get('id');
-      if (!vocabId) { window.location.href = 'dashboard.html'; return; }
+      if (!vocabId) { window.location.href = '/dashboard'; return; }
 
       let vocabData = null;
       let wordsData = [];
@@ -399,7 +399,7 @@
         try {
           const res = await authFetch(`/api/vocab/${vocabId}`);
           if (res.status === 401) { return; }
-          if (res.status === 404) { window.location.href = 'dashboard.html'; return; }
+          if (res.status === 404) { window.location.href = '/dashboard'; return; }
           vocabData = await res.json();
           // Jackson이 primitive boolean isPublic()을 "public" 키로 직렬화하는 문제 정규화
           if (vocabData.isPublic === undefined && vocabData['public'] !== undefined) {
@@ -459,7 +459,7 @@
                 </div>
               </div>
               <div class="vocab-header__actions">
-                <a href="test.html?vocabId=${v.id}" class="btn btn--primary">📝 테스트 시작</a>
+                <a href="/test?vocabId=${v.id}" class="btn btn--primary">📝 테스트 시작</a>
                 <button class="btn btn--ghost" id="editBtn">✏️ 수정</button>
                 <button class="btn btn--ghost" id="deleteBtn" style="border-color:#e55;color:#e55;">🗑️ 삭제</button>
               </div>
@@ -820,7 +820,7 @@
         try {
           await authFetch(`/api/vocab/${vocabId}`, { method: 'DELETE' });
         } catch { /* ignore */ }
-        window.location.href = 'dashboard.html';
+        window.location.href = '/dashboard';
       });
 
       /* Search / filter */
