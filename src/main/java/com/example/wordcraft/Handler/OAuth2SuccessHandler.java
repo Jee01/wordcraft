@@ -1,6 +1,7 @@
 package com.example.wordcraft.Handler;
 
 import com.example.wordcraft.Entity.Users;
+import com.example.wordcraft.Exception.ResourceNotFoundException;
 import com.example.wordcraft.JWT.JwtTokenProvider;
 import com.example.wordcraft.Repository.UserRepository;
 import com.example.wordcraft.Util.CookieUtil;
@@ -35,7 +36,8 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String accessToken = tokenProvider.generateAccessToken(email);
         String refreshToken = tokenProvider.generateRefreshToken(email);
 
-        Users users = userRepository.findByEmail(email).orElseThrow();
+        Users users = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("OAuth2 사용자 정보를 찾을 수 없습니다."));
         users.setRefreshToken(refreshToken);
         userRepository.save(users);
 

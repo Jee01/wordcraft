@@ -15,28 +15,43 @@ public class CookieUtil {
         response.addCookie(cookie);
     }
 
-    public static void removeCookie(HttpServletRequest request,HttpServletResponse response, String name){
+    public static void removeCookie(HttpServletRequest request, HttpServletResponse response, String name) {
         Cookie[] cookies = request.getCookies();
-        if (cookies == null){
+        if (cookies == null) {
             return;
         }
-        for(Cookie cookie : cookies){
-            if (name.equals(cookie.getName())){
-                cookie.setValue("");
-                cookie.setPath("/");
-                cookie.setMaxAge(0);
-                response.addCookie(cookie);
+        for (Cookie cookie : cookies) {
+            if (name.equals(cookie.getName())) {
+                String header = name + "="
+                        + "; Path=/"
+                        + "; Max-Age=0"
+                        + "; HttpOnly"
+                        + "; SameSite=Lax";
+                if (isSecureEnvironment()) {
+                    header += "; Secure";
+                }
+                response.addHeader("Set-Cookie", header);
             }
         }
     }
 
-    public static void addTokenCookie(HttpServletResponse response, String name, String value,int maxAge) {
-        Cookie cookie = new Cookie(name, value);
-        cookie.setPath("/");
-        cookie.setHttpOnly(true);       // JS 접근 차단
-        cookie.setSecure(false);        // 로컬은 false, 배포 시 true로 변경
-        cookie.setMaxAge(maxAge);
-        response.addCookie(cookie);
+    public static void addTokenCookie(HttpServletResponse response, String name, String value, int maxAge) {
+
+        String header = name + "=" + value
+                + "; Path=/"
+                + "; Max-Age=" + maxAge
+                + "; HttpOnly"
+                + "; SameSite=Lax";
+
+        if (isSecureEnvironment()) {
+            header += "; Secure";
+        }
+        response.addHeader("Set-Cookie", header);
+    }
+
+    private static boolean isSecureEnvironment() {
+        String profile = System.getProperty("spring.profiles.active", "");
+        return profile.contains("prod");
     }
 
     public static String serialize(Object object){

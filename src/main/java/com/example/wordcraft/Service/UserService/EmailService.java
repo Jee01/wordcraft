@@ -2,6 +2,7 @@ package com.example.wordcraft.Service.UserService;
 
 import com.example.wordcraft.DTO.Mail.EmailCodeVerifyDTO;
 import com.example.wordcraft.DTO.Mail.EmailVerifyRequestDTO;
+import com.example.wordcraft.Exception.EmailSendException;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
@@ -32,7 +33,11 @@ public class EmailService {
         message.setSubject("[Wordcraft] 이메일 인증 코드");
         message.setText("인증 코드: " + code);
 
-        mailSender.send(message);
+        try {
+            mailSender.send(message);
+        } catch (Exception e) {
+            throw new EmailSendException("이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        }
     }
 
     public Boolean verifyCode(EmailCodeVerifyDTO emailCodeVerifyDTO) {

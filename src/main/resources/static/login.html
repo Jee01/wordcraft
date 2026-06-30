@@ -344,7 +344,7 @@
       </div>
 
       <p class="auth-footer-note">
-        로그인하면 <a href="#">이용약관</a> 및 <a href="#">개인정보처리방침</a>에 동의하는 것으로 간주됩니다.
+        로그인하면 <a href="policy.html">이용약관 및 개인정보처리방침</a>에 동의하는 것으로 간주됩니다.
       </p>
 
     </div>
@@ -429,10 +429,16 @@
         }),
       });
 
+      if (res.status === 429) {
+        apiError.textContent = '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.';
+        apiError.classList.add('show');
+        return;
+      }
+
       const data = await res.json();
 
       if (!res.ok) {
-        apiError.textContent = data.message || '로그인에 실패했습니다.';
+        apiError.textContent = '이메일 또는 비밀번호가 올바르지 않습니다.';
         apiError.classList.add('show');
         return;
       }

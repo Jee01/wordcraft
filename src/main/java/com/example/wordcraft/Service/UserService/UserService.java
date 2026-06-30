@@ -5,6 +5,10 @@ import com.example.wordcraft.DTO.Mail.EmailCodeVerifyDTO;
 import com.example.wordcraft.DTO.Mail.ForgotPasswordUpdateDTO;
 import com.example.wordcraft.DTO.User.*;
 import com.example.wordcraft.Entity.Users;
+import com.example.wordcraft.Exception.DuplicateException;
+import com.example.wordcraft.Exception.InvalidTokenException;
+import com.example.wordcraft.Exception.ResourceNotFoundException;
+import com.example.wordcraft.Exception.UnauthorizedException;
 import com.example.wordcraft.JWT.JwtTokenProvider;
 import com.example.wordcraft.Repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +28,7 @@ public class UserService {
     @Transactional
     public void register(UserRegisterDTO userRegisterDTO) {
         if(userRepository.findByEmail(userRegisterDTO.getEmail()).isPresent()) {
-            throw new IllegalStateException("already registered E-mail");
+            throw new DuplicateException("already registered");
         }
         Users users = new Users();
         users.setNickname(userRegisterDTO.getNickname());
@@ -41,7 +45,7 @@ public class UserService {
     public TokenResponseDTO login(LoginRequestDTO loginRequestDTO) {
         Users users = validUser(loginRequestDTO.getEmail());
         if(!passwordEncoder.matches(loginRequestDTO.getPassword(), users.getPassword())) {
-            throw new IllegalStateException("wrong password");
+            throw new UnauthorizedException("email or password is incorrect.");
         }
 
         String accessToken = jwtTokenProvider.generateAccessToken(loginRequestDTO.getEmail());
@@ -62,7 +66,7 @@ public class UserService {
         Users users = validUser(email);
 
         if(!passwordEncoder.matches(userPasswordUpdateDTO.getPassword(), users.getPassword())) {
-            throw new IllegalStateException("wrong password");
+            throw new UnauthorizedException("password is incorrect.");
         }
 
         users.setPassword(passwordEncoder.encode(userPasswordUpdateDTO.getUpdatePassword()));
@@ -80,8 +84,11 @@ public class UserService {
     @Transactional
     public void deleteUser(String email, UserDeleteDTO userDeleteDTO) {
         Users users = validUser(email);
-        if(!passwordEncoder.matches(userDeleteDTO.getPassword(), users.getPassword())) {
-            throw new IllegalStateException("wrong password");
+        if (!"google".equals(users.getProvider())) {
+            if (userDeleteDTO.getPassword() == null ||
+                !passwordEncoder.matches(userDeleteDTO.getPassword(), users.getPassword())) {
+                throw new UnauthorizedException("비밀번호가 올바르지 않습니다.");
+            }
         }
         userRepository.delete(users);
     }
@@ -95,12 +102,12 @@ public class UserService {
 
     public String refreshToken(String refreshToken) {
         if(!jwtTokenProvider.validateToken(refreshToken)) {
-            throw new IllegalStateException("invalid or expired token");
+            throw new InvalidTokenException("expired token");
         }
         String email = jwtTokenProvider.getEmailFromToken(refreshToken);
         Users users = validUser(email);
         if(!refreshToken.equals(users.getRefreshToken())) {
-            throw new IllegalStateException("refresh token does not match");
+            throw new InvalidTokenException("token is incorrect.");
         }
 
         return jwtTokenProvider.generateAccessToken(email);
@@ -112,6 +119,7 @@ public class UserService {
         return UserDTO.builder()
                 .email(users.getEmail())
                 .nickname(users.getNickname())
+                .provider(users.getProvider())
                 .build();
     }
 
@@ -140,6 +148,6 @@ public class UserService {
 
     private Users validUser(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("email not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("not found"));
     }
 }

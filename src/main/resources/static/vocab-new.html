@@ -89,6 +89,8 @@
     .ai-option.selected { border-color: var(--accent); background: var(--accent-dim); }
     .ai-option__name { font-size: 0.82rem; font-weight: 700; color: var(--text); }
     .ai-option__model { font-size: 0.7rem; color: var(--text-3); margin-top: 2px; }
+    .ai-option--disabled { opacity: .45; cursor: not-allowed; pointer-events: none; }
+    .ai-option__badge { font-size: 0.65rem; font-weight: 700; color: var(--text-3); background: var(--bg-2); border: 1px solid var(--border); border-radius: 20px; padding: 1px 7px; margin-top: 5px; display: inline-block; }
     .key-warning {
       display: none; padding: 10px 14px;
       background: rgba(245,166,35,.1); border: 1px solid rgba(245,166,35,.4);
@@ -362,15 +364,17 @@ elaborate"></textarea>
                 ⚠️ AI API Key가 설정되지 않았습니다. <a href="settings.html">설정 페이지</a>에서 먼저 API Key를 입력해주세요.
               </div>
               <div class="ai-selector" id="aiSelector">
-                <div class="ai-option selected" data-provider="anthropic">
+                <div class="ai-option ai-option--disabled" data-provider="anthropic" title="아직 구현되지 않은 기능입니다.">
                   <div class="ai-option__name">Anthropic</div>
                   <div class="ai-option__model">Claude Sonnet</div>
+                  <div class="ai-option__badge">준비 중</div>
                 </div>
-                <div class="ai-option" data-provider="openai">
+                <div class="ai-option ai-option--disabled" data-provider="openai" title="아직 구현되지 않은 기능입니다.">
                   <div class="ai-option__name">OpenAI</div>
                   <div class="ai-option__model">GPT-4o mini</div>
+                  <div class="ai-option__badge">준비 중</div>
                 </div>
-                <div class="ai-option" data-provider="google">
+                <div class="ai-option selected" data-provider="google">
                   <div class="ai-option__name">Google</div>
                   <div class="ai-option__model">Gemini Flash</div>
                 </div>
@@ -544,9 +548,10 @@ elaborate"></textarea>
     ════════════════════════════════ */
 
     /* AI 제공자 선택 */
-    let selectedProvider = 'anthropic';
+    let selectedProvider = 'google';
     document.querySelectorAll('.ai-option').forEach(opt => {
       opt.addEventListener('click', () => {
+        if (opt.classList.contains('ai-option--disabled')) return;
         document.querySelectorAll('.ai-option').forEach(o => o.classList.remove('selected'));
         opt.classList.add('selected');
         selectedProvider = opt.dataset.provider;

@@ -1,11 +1,13 @@
 package com.example.wordcraft.Service.AiService;
 
 import com.example.wordcraft.DTO.AI.WordAnalysisDTO;
+import com.example.wordcraft.Exception.ExternalApiException;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.JsonNode;
@@ -40,9 +42,12 @@ public class GeminiService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        ResponseEntity<String> response = restTemplate.postForEntity(
-                url, new HttpEntity<>(body, headers), String.class
-        );
+        ResponseEntity<String> response;
+        try {
+            response = restTemplate.postForEntity(url, new HttpEntity<>(body, headers), String.class);
+        } catch (RestClientException e) {
+            throw new ExternalApiException("AI API 호출에 실패했습니다. API 키를 확인해주세요.");
+        }
 
         return parseResponse(response.getBody());
     }
@@ -88,7 +93,7 @@ public class GeminiService {
                     objectMapper.getTypeFactory().constructCollectionType(List.class, WordAnalysisDTO.class)
             );
         } catch (Exception e) {
-            throw new RuntimeException("AI 응답 파싱 실패: " + e.getMessage());
+            throw new ExternalApiException("AI 응답 처리에 실패했습니다. 잠시 후 다시 시도해주세요.");
         }
     }
 

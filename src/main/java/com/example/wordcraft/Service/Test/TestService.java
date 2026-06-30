@@ -8,6 +8,8 @@ import com.example.wordcraft.Entity.Users;
 import com.example.wordcraft.Entity.Voca.VocaWordDetail;
 import com.example.wordcraft.Entity.Voca.VocaWords;
 import com.example.wordcraft.Entity.Voca.Vocabularies;
+import com.example.wordcraft.Exception.ResourceNotFoundException;
+import com.example.wordcraft.Exception.UnauthorizedException;
 import com.example.wordcraft.Repository.TestResultRepository;
 import com.example.wordcraft.Repository.UserRepository;
 import com.example.wordcraft.Repository.VocaWordDetailRepository;
@@ -37,7 +39,7 @@ public class TestService {
         List<VocaWords> words = vocaWordsRepository.findByVocabularyId(vocab.getId());
 
         if (words.size() < 2) {
-            throw new RuntimeException("문제를 생성하려면 단어가 2개 이상 필요합니다.");
+            throw new ResourceNotFoundException("문제를 생성하려면 단어가 2개 이상 필요합니다.");
         }
 
         // 모든 단어의 detail을 미리 로드
@@ -133,7 +135,7 @@ public class TestService {
         }
 
         if (questions.isEmpty()) {
-            throw new RuntimeException("예문이 있는 단어가 없습니다.");
+            throw new ResourceNotFoundException("예문이 있는 단어가 없습니다.");
         }
 
         Collections.shuffle(questions);
@@ -144,10 +146,10 @@ public class TestService {
     @Transactional
     public void saveTestResult(TestResultRequestDTO request, String email) {
         Users user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("not found user"));
+                .orElseThrow(() -> new ResourceNotFoundException("존재하지 않는 사용자입니다."));
 
         Vocabularies vocab = vocabulariesRepository.findById(request.getVocabId())
-                .orElseThrow(() -> new RuntimeException("vocabularies not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("존재하지 않는 단어장입니다."));
 
         int wrongCount = request.getWrongWords() == null ? 0 : request.getWrongWords().size();
 
@@ -194,7 +196,7 @@ public class TestService {
     @Transactional(readOnly = true)
     public List<RecentActivityDTO> getRecentActivities(String email) {
         Users user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("not found user"));
+                .orElseThrow(() -> new ResourceNotFoundException("존재하지 않는 사용자입니다."));
 
         return testResultRepository.findTop10ByUserOrderByTakenAtDesc(user)
                 .stream()
@@ -204,9 +206,9 @@ public class TestService {
 
     private Vocabularies getVocabAndValidate(Long vocabId, String email) {
         Vocabularies vocab = vocabulariesRepository.findById(vocabId)
-                .orElseThrow(() -> new RuntimeException("vocabularies not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("존재하지 않는 단어장입니다."));
         if (!vocab.getUser().getEmail().equals(email)) {
-            throw new RuntimeException("user's match error");
+            throw new UnauthorizedException("해당 단어장에 대한 권한이 없습니다.");
         }
         return vocab;
     }

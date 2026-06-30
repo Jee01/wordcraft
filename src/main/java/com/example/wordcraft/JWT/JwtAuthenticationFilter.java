@@ -41,8 +41,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
                 log.info("JWT Authentication Success : {}", email);
             } catch (Exception e) {
-                log.warn("JWT 인증 실패, 필터 통과: {}", e.getMessage());
-                // 예외를 던지지 않고 그냥 통과 → 인증되지 않은 상태로 다음 필터로 진행
+                log.warn("JWT 인증 실패: {}", e.getMessage());
+                SecurityContextHolder.clearContext();
             }
         }
         filterChain.doFilter(request, response);

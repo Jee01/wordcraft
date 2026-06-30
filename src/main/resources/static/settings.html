@@ -187,11 +187,11 @@
                 <div class="form-group">
                   <label class="form-label">Anthropic (Claude)</label>
                   <div class="key-row">
-                    <input type="password" class="form-input" id="key-anthropic" placeholder="sk-ant-..." />
-                    <button class="key-toggle" data-target="key-anthropic">👁️</button>
+                    <input type="password" class="form-input" id="key-anthropic" placeholder="sk-ant-..." disabled style="opacity:.45;cursor:not-allowed;" />
+                    <button class="key-toggle" data-target="key-anthropic" disabled style="opacity:.45;cursor:not-allowed;">👁️</button>
                   </div>
-                  <div class="key-status" id="status-anthropic">
-                    <span>●</span><span>미설정</span>
+                  <div class="key-status" style="color:var(--text-3);font-size:0.78rem;margin-top:4px;">
+                    🚧 아직 구현되지 않은 기능입니다.
                   </div>
                 </div>
 
@@ -199,11 +199,11 @@
                 <div class="form-group">
                   <label class="form-label">OpenAI (GPT)</label>
                   <div class="key-row">
-                    <input type="password" class="form-input" id="key-openai" placeholder="sk-..." />
-                    <button class="key-toggle" data-target="key-openai">👁️</button>
+                    <input type="password" class="form-input" id="key-openai" placeholder="sk-..." disabled style="opacity:.45;cursor:not-allowed;" />
+                    <button class="key-toggle" data-target="key-openai" disabled style="opacity:.45;cursor:not-allowed;">👁️</button>
                   </div>
-                  <div class="key-status" id="status-openai">
-                    <span>●</span><span>미설정</span>
+                  <div class="key-status" style="color:var(--text-3);font-size:0.78rem;margin-top:4px;">
+                    🚧 아직 구현되지 않은 기능입니다.
                   </div>
                 </div>
 
@@ -517,8 +517,14 @@
       document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
         const confirmed = prompt('계정을 탈퇴하려면 "탈퇴합니다"를 입력하세요:');
         if (confirmed !== '탈퇴합니다') return;
-        const pw = prompt('비밀번호를 입력하세요:');
-        if (!pw) return;
+
+        const isOAuth = user.provider === 'google';
+        let pw = null;
+        if (!isOAuth) {
+          pw = prompt('비밀번호를 입력하세요:');
+          if (!pw) return;
+        }
+
         try {
           const res = await authFetch('/api/auth/delete', {
             method: 'POST',

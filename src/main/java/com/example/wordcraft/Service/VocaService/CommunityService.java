@@ -8,6 +8,8 @@ import com.example.wordcraft.Entity.*;
 import com.example.wordcraft.Entity.Voca.VocaWordDetail;
 import com.example.wordcraft.Entity.Voca.VocaWords;
 import com.example.wordcraft.Entity.Voca.Vocabularies;
+import com.example.wordcraft.Exception.ResourceNotFoundException;
+import com.example.wordcraft.Exception.UnauthorizedException;
 import com.example.wordcraft.Repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -31,10 +33,10 @@ public class CommunityService {
     @Transactional
     public void copyVocabularies(Long id, String email) {
         Users requestUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("not found user"));
+                .orElseThrow(() -> new ResourceNotFoundException("not found user"));
 
         Vocabularies originVocabularies = vocabulariesRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("vocabularies not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("not found vocabularies"));
 
         Vocabularies copyVocabularies = Vocabularies.builder()
                 .originId(originVocabularies.getId())
@@ -91,7 +93,7 @@ public class CommunityService {
     public VocaDetailResponseDTO getVocaDetail(Long id){
         Vocabularies vocabularies = getVocabularies(id);
         if(Objects.equals(vocabularies.getIsPublic(),false)){
-            throw new RuntimeException("private vocab"); //이후 예외 처리 대시보드로 보내도록 변경
+            throw new UnauthorizedException("private vocabularies");
         }
         List<VocaWords> vocaWords = vocaWordsRepository.findByVocabularyId(vocabularies.getId());
 
@@ -135,7 +137,7 @@ public class CommunityService {
     public Boolean likeVoca(Long id, String email){
         Vocabularies vocabularies = getVocabularies(id);
         Users users = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("email not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("not found user"));
 
         Optional<CommunityLike> communityLike = communityLikeRepository.findByUserAndVocabulary(users, vocabularies);
 
@@ -154,6 +156,6 @@ public class CommunityService {
 
     protected Vocabularies getVocabularies(Long id){
         return vocabulariesRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("vocabularies not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("not found vocabularies"));
     }
 }

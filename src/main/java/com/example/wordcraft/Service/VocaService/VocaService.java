@@ -5,6 +5,8 @@ import com.example.wordcraft.Entity.Users;
 import com.example.wordcraft.Entity.Voca.VocaWordDetail;
 import com.example.wordcraft.Entity.Voca.VocaWords;
 import com.example.wordcraft.Entity.Voca.Vocabularies;
+import com.example.wordcraft.Exception.ResourceNotFoundException;
+import com.example.wordcraft.Exception.UnauthorizedException;
 import com.example.wordcraft.Repository.UserRepository;
 import com.example.wordcraft.Repository.VocaWordDetailRepository;
 import com.example.wordcraft.Repository.VocaWordsRepository;
@@ -30,7 +32,7 @@ public class VocaService {
     public void createVocabularies(VocaRequestDTO vocaRequestDTO, String email)
     {
         Users user = userRepository.findByEmail(email)
-                .orElseThrow(()-> new RuntimeException("not found user"));
+                .orElseThrow(()-> new ResourceNotFoundException("존재하지 않는 사용자입니다."));
 
         Vocabularies vocabularies = Vocabularies.builder()
                 .originId(null)
@@ -69,7 +71,7 @@ public class VocaService {
     //개인 단어장
     public List<VocaResponseDTO> getVocaListByUserId(String email){
         Users user = userRepository.findByEmail(email)
-                .orElseThrow(()-> new RuntimeException("not found user"));
+                .orElseThrow(()-> new ResourceNotFoundException("존재하지 않는 사용자입니다."));
 
         List<Vocabularies> myVocabularies = vocabulariesRepository.findAllByUser(user);
         return myVocabularies.stream()
@@ -172,7 +174,7 @@ public class VocaService {
         userValid(email, updateVocaL);
 
         VocaWords updateWordL = vocaWordsRepository.findVocaWordsById(updateVocaL, vocabLearnDTO.getId())
-                .orElseThrow(() -> new RuntimeException("word not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("존재하지 않는 단어입니다."));
 
         Boolean status = vocabLearnDTO.getLearned();
 
@@ -192,11 +194,11 @@ public class VocaService {
 
     private Vocabularies getVocabularies(Long id){
         return vocabulariesRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("vocabularies not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("not found vocabularies"));
     }
     private void userValid(String email, Vocabularies vocabularies){
         if (!Objects.equals(vocabularies.getUser().getEmail(), email)){
-            throw new RuntimeException("user's match error");
+            throw new UnauthorizedException("해당 단어장에 대한 권한이 없습니다.");
         }
     }
 

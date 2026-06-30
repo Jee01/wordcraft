@@ -398,22 +398,10 @@
 
         <div class="terms-group">
           <label class="form-check">
-            <input type="checkbox" id="termsAll" />
-            <span><strong>전체 동의</strong></span>
-          </label>
-          <label class="form-check">
             <input type="checkbox" id="terms1" />
-            <span><a href="#">이용약관</a> 동의 (필수)</span>
+            <span><a href="policy.html" target="_blank">이용약관 및 개인정보처리방침</a>에 동의합니다. (필수)</span>
           </label>
-          <label class="form-check">
-            <input type="checkbox" id="terms2" />
-            <span><a href="#">개인정보처리방침</a> 동의 (필수)</span>
-          </label>
-          <label class="form-check">
-            <input type="checkbox" id="terms3" />
-            <span>마케팅 수신 동의 (선택)</span>
-          </label>
-          <span class="terms-error" id="termsError">필수 약관에 동의해주세요.</span>
+          <span class="terms-error" id="termsError">약관에 동의해주세요.</span>
         </div>
 
         <button type="submit" class="btn btn--primary btn-full" id="submitBtn">회원가입</button>
@@ -440,7 +428,7 @@
       </div>
 
       <p class="auth-footer-note">
-        가입하면 <a href="#">이용약관</a> 및 <a href="#">개인정보처리방침</a>에 동의하는 것으로 간주됩니다.
+        가입하면 <a href="policy.html" target="_blank">이용약관 및 개인정보처리방침</a>에 동의하는 것으로 간주됩니다.
       </p>
 
     </div>
@@ -521,18 +509,6 @@
 
 <script src="main.js"></script>
 <script>
-  /* ===== Terms all-check ===== */
-  const termsAll = document.getElementById('termsAll');
-  const termsBoxes = ['terms1','terms2','terms3'].map(id => document.getElementById(id));
-
-  termsAll.addEventListener('change', () => {
-    termsBoxes.forEach(b => b.checked = termsAll.checked);
-  });
-  termsBoxes.forEach(b => {
-    b.addEventListener('change', () => {
-      termsAll.checked = termsBoxes.every(x => x.checked);
-    });
-  });
 
   /* ===== Password strength ===== */
   const pwInput = document.getElementById('password');
@@ -586,7 +562,6 @@
     const pw       = document.getElementById('password').value;
     const pwc      = document.getElementById('passwordConfirm').value;
     const t1       = document.getElementById('terms1').checked;
-    const t2       = document.getElementById('terms2').checked;
 
     if (!nickname) {
       markInput('nickname','error'); showErr('nicknameError'); ok = false;
@@ -605,7 +580,7 @@
       markInput('passwordConfirm','error'); showErr('confirmError'); ok = false;
     } else { markInput('passwordConfirm','success'); hideErr('confirmError'); }
 
-    if (!t1 || !t2) {
+    if (!t1) {
       showErr('termsError'); ok = false;
     } else { hideErr('termsError'); }
 
