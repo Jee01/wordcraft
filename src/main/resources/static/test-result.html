@@ -196,6 +196,7 @@
             <a href="test.html${vocabId ? '?vocabId=' + vocabId : ''}" class="btn btn--primary btn--lg">🔄 다시 테스트</a>
             ${vocabId ? `<a href="vocab.html?id=${vocabId}" class="btn btn--ghost btn--lg">📚 단어장 보기</a>` : ''}
             <a href="dashboard.html" class="btn btn--ghost btn--lg">🏠 대시보드</a>
+            ${wrong.length > 0 ? `<button class="btn btn--ghost btn--lg" id="createWrongVocabBtn" style="border-color:#e55;color:#e55;">📝 틀린 단어로 단어장 만들기</button>` : ''}
           </div>
 
           <!-- Wrong words -->
@@ -241,7 +242,53 @@
 
       function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+      async function createWrongWordVocab() {
+        const wrong = testResults.wrongWords || [];
+        if (!wrong.length) return;
+
+        const btn = document.getElementById('createWrongVocabBtn');
+        btn.disabled = true;
+        btn.textContent = '생성 중...';
+
+        const today = new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' });
+        const payload = {
+          title: `오답 단어장 (${today})`,
+          tag: '복습',
+          isPublic: false,
+          words: wrong.map(w => ({
+            word: w.word,
+            ipa: w.ipa || null,
+            memoryTip: w.memoryTip || null,
+            vocaWordDetailDTOS: (w.details && w.details.length > 0)
+              ? w.details.map(d => ({
+                  pos: d.pos || null,
+                  meaning: d.meanings || d.meaning || '',
+                  examples: d.examples || null,
+                }))
+              : [{ pos: null, meaning: w.meaning || '', examples: null }]
+          }))
+        };
+
+        try {
+          const res = await authFetch('/api/vocab', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) throw new Error('서버 오류');
+          alert(`✅ 오답 단어장이 생성되었습니다! (${wrong.length}개 단어)`);
+          window.location.href = 'dashboard.html';
+        } catch (e) {
+          alert('단어장 생성에 실패했습니다. 다시 시도해주세요.');
+          btn.disabled = false;
+          btn.textContent = '📝 틀린 단어로 단어장 만들기';
+        }
+      }
+
       render();
+
+      const wrongVocabBtn = document.getElementById('createWrongVocabBtn');
+      if (wrongVocabBtn) wrongVocabBtn.addEventListener('click', createWrongWordVocab);
     })();
   </script>
 </body>

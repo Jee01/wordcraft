@@ -94,6 +94,16 @@
 
     /* Quick action buttons */
     .quick-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* Tag filter */
+    .tag-filter { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+    .tag-filter__btn {
+      padding: 5px 14px; border-radius: 100px; border: 1.5px solid var(--border);
+      background: var(--bg-3); color: var(--text-2); font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; transition: border-color .2s, background .2s, color .2s;
+    }
+    .tag-filter__btn:hover { border-color: var(--accent); color: var(--accent); }
+    .tag-filter__btn.active { border-color: var(--accent); background: var(--accent-dim); color: var(--accent-2); }
   </style>
 </head>
 <body>
@@ -160,10 +170,12 @@
         <div class="dash__header">
           <h2>내 단어장</h2>
           <div class="quick-actions">
-            <a href="vocab-import.html" class="btn btn--ghost">📥 가져오기</a>
             <a href="vocab-new.html" class="btn btn--primary">+ 새 단어장</a>
           </div>
         </div>
+
+        <!-- Tag Filter -->
+        <div class="tag-filter" id="tagFilter" style="display:none;"></div>
 
         <!-- Vocab Grid -->
         <div class="vocab-grid" id="vocabGrid">
@@ -204,6 +216,10 @@
       /* ===== LOAD VOCABS ===== */
       const grid = document.getElementById('vocabGrid');
       const actList = document.getElementById('activityList');
+      const tagFilterEl = document.getElementById('tagFilter');
+
+      let allVocabs = [];
+      let activeTag = null;
 
       async function loadDashboard() {
         try {
@@ -252,14 +268,39 @@
       }
 
       function renderVocabs(raw) {
-        const vocabs = raw.map(normalize);
-        if (!vocabs || vocabs.length === 0) {
+        allVocabs = raw.map(normalize);
+        if (!allVocabs || allVocabs.length === 0) {
+          tagFilterEl.style.display = 'none';
           grid.innerHTML = newCard() + emptyCards();
           return;
         }
-        updateStats(vocabs);
-        grid.innerHTML = newCard() + vocabs.map(v => vocabCard(v)).join('');
+        updateStats(allVocabs);
+        buildTagFilter(allVocabs);
+        renderGrid(allVocabs);
+      }
 
+      function buildTagFilter(vocabs) {
+        const tagSet = new Set();
+        vocabs.forEach(v => v.tags.forEach(t => { if (t) tagSet.add(t); }));
+        if (tagSet.size === 0) { tagFilterEl.style.display = 'none'; return; }
+
+        tagFilterEl.style.display = 'flex';
+        tagFilterEl.innerHTML = `<button class="tag-filter__btn active" data-tag="">전체</button>`
+          + [...tagSet].map(t => `<button class="tag-filter__btn" data-tag="${escHtml(t)}">${escHtml(t)}</button>`).join('');
+
+        tagFilterEl.querySelectorAll('.tag-filter__btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            tagFilterEl.querySelectorAll('.tag-filter__btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeTag = btn.dataset.tag || null;
+            const filtered = activeTag ? allVocabs.filter(v => v.tags.includes(activeTag)) : allVocabs;
+            renderGrid(filtered);
+          });
+        });
+      }
+
+      function renderGrid(vocabs) {
+        grid.innerHTML = newCard() + vocabs.map(v => vocabCard(v)).join('');
         setTimeout(() => {
           grid.querySelectorAll('.reveal').forEach((el, i) => {
             el.style.transitionDelay = `${(i % 6) * 60}ms`;

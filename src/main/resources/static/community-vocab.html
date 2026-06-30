@@ -38,14 +38,32 @@
     .wc:hover { border-color: var(--border-2); transform: translateY(-2px); }
     .wc__word { font-size: 1.3rem; font-weight: 800; color: var(--text); }
     .wc__ipa { font-size: 0.82rem; color: var(--text-3); margin-top: 2px; margin-bottom: 12px; }
+    .wc__top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
     .wc__meaning { font-size: 1rem; font-weight: 700; color: var(--accent-2); margin-bottom: 10px; }
     .wc__example {
       font-size: 0.85rem; color: var(--text-2); font-style: italic;
       padding: 8px 12px; background: var(--bg-4); border-radius: 8px;
       border-left: 3px solid var(--accent); margin-bottom: 10px;
     }
-    .wc__tip { font-size: 0.78rem; color: var(--text-3); }
+    .wc__tip { font-size: 0.78rem; color: var(--text-3); margin-top: 8px; }
     .wc__tags { display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap; }
+
+    /* Multi-detail word card */
+    .wc__details { display: flex; flex-direction: column; margin-bottom: 10px; }
+    .wc__detail { padding: 10px 0; }
+    .wc__detail + .wc__detail { border-top: 1px solid var(--border); }
+    .wc__detail-pos {
+      display: inline-block; font-size: 0.7rem; font-weight: 700;
+      color: var(--accent-2); background: var(--accent-dim);
+      border: 1px solid var(--accent); border-radius: 100px;
+      padding: 2px 8px; margin-bottom: 6px;
+    }
+    .wc__detail-meaning { font-size: 1rem; font-weight: 700; color: var(--accent-2); margin-bottom: 6px; }
+    .wc__detail-example {
+      font-size: 0.85rem; color: var(--text-2); font-style: italic;
+      padding: 6px 10px; background: var(--bg-4);
+      border-radius: 6px; border-left: 3px solid var(--accent);
+    }
 
     .loading { text-align: center; padding: 80px; color: var(--text-3); }
     .loading__dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 12px; }
@@ -217,23 +235,40 @@
       }
 
       function wordCard(w) {
+        const details = w.vocaWordDetailDTOS || [];
+        const bodyHtml = details.length > 0
+          ? `<div class="wc__details">
+              ${details.map(d => `
+                <div class="wc__detail">
+                  ${d.pos ? `<span class="wc__detail-pos">${escHtml(d.pos)}</span>` : ''}
+                  <div class="wc__detail-meaning">${escHtml(d.meaning || '')}</div>
+                  ${d.examples ? `<div class="wc__detail-example">${escHtml(d.examples)}</div>` : ''}
+                </div>`).join('')}
+             </div>`
+          : `<div class="wc__meaning">${escHtml(w.meaning || '')}</div>
+             ${w.examples ? `<div class="wc__example">"${escHtml(w.examples)}"</div>` : ''}`;
+
         return `
           <div class="wc reveal">
-            <div class="wc__word">${escHtml(w.word)}</div>
-            <div class="wc__ipa">${escHtml(w.ipa || '')}</div>
-            <div class="wc__meaning">${escHtml(w.meaning)}</div>
-            ${w.examples ? `<div class="wc__example">"${escHtml(w.examples)}"</div>` : ''}
-            ${w.memoryTip ? `<div class="wc__tip">${escHtml(w.memoryTip)}</div>` : ''}
-            <div class="wc__tags">
-              ${w.pos ? `<span class="tag tag--noun">${escHtml(w.pos)}</span>` : ''}
+            <div class="wc__top">
+              <div>
+                <div class="wc__word">${escHtml(w.word)}</div>
+                <div class="wc__ipa">${escHtml(w.ipa || '')}</div>
+              </div>
             </div>
+            ${bodyHtml}
+            ${w.memoryTip ? `<div class="wc__tip">💡 ${escHtml(w.memoryTip)}</div>` : ''}
           </div>`;
       }
 
       document.getElementById('searchInput').addEventListener('input', () => {
         const q = document.getElementById('searchInput').value.toLowerCase();
         const filtered = q
-          ? wordsData.filter(w => w.word.toLowerCase().includes(q) || (w.meaning || '').toLowerCase().includes(q))
+          ? wordsData.filter(w => {
+              const details = w.vocaWordDetailDTOS || [];
+              return w.word.toLowerCase().includes(q) ||
+                details.some(d => (d.meaning || '').toLowerCase().includes(q));
+            })
           : wordsData;
         renderWords(filtered);
         attachReveal();

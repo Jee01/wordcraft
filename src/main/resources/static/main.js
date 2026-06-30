@@ -52,7 +52,7 @@ async function requireAuth() {
     '#/register':     'register.html',
     '#/dashboard':    'dashboard.html',
     '#/vocab/new':    'vocab-new.html',
-    '#/vocab/import': 'vocab-import.html',
+    // '#/vocab/import': 'vocab-import.html',  /* 가져오기 기능 비활성화 */
     '#/community':    'community.html',
     '#/settings':          'settings.html',
     '#/forgot-password':   'forgot-password.html',

@@ -488,6 +488,7 @@
               wordId,
               word: q.word,
               ipa: q.ipa || null,
+              memoryTip: q.memoryTip || null,
               wrongCount: wrongCountMap[wordId] || 1,
               details: buildDetails(q),
               displayMeaning: buildDisplayMeaning(q),
@@ -507,6 +508,7 @@
           })),
           wrongWords: wrongWordsArr.map(w => ({
             word: w.word, ipa: w.ipa, meaning: w.displayMeaning, wrongCount: w.wrongCount,
+            memoryTip: w.memoryTip, details: w.details,
           })),
         }));
 
