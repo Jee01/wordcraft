@@ -1253,3 +1253,103 @@ w.word.includes(q) || w.vocaWordDetailDTOS.some(d => d.meaning.includes(q))
 **CSS 추가:** `vocab.html`과 동일한 `.wc__top`, `.wc__details`, `.wc__detail`, `.wc__detail-pos`, `.wc__detail-meaning`, `.wc__detail-example` 스타일 클래스 추가.
 
 > **주의:** 향후 단어 데이터 구조가 변경될 경우 `vocab.html`, `community-vocab.html` 양쪽 모두 업데이트 필요.
+
+---
+
+## AWS EC2 배포 및 HTTPS 설정 (2026-06-30)
+
+### 인프라 구성
+
+| 항목 | 값 |
+|---|---|
+| 서버 | AWS EC2 (Ubuntu 24.04, t3.micro) |
+| 도메인 | `wordcraft-ai.duckdns.org` → `54.66.253.129` (DuckDNS 무료 도메인) |
+| DB | AWS RDS MySQL 8.4.8 (프라이빗 서브넷, EC2 경유 접속) |
+| 캐시 | Redis (EC2 localhost:6379, 이메일 인증 코드 저장) |
+| 리버스 프록시 | Nginx (포트 80 → HTTPS 리다이렉트, 443 → localhost:8080) |
+| HTTPS | Let's Encrypt (certbot --nginx) |
+| Spring 프로필 | `prod` (`-Dspring.profiles.active=prod`) |
+
+### 배포 절차
+
+```
+로컬: ./gradlew clean build -x test
+로컬: scp -i C:\study\wordcraft\AWS\wordcraft-key.pem build\libs\wordcraft-0.0.1-SNAPSHOT.jar ubuntu@54.66.253.129:~/
+EC2:  pkill -f wordcraft
+EC2:  nohup java -Dspring.profiles.active=prod -jar wordcraft-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
+```
+
+### 주요 수정 사항 (배포 준비 중 발견)
+
+| 파일 | 수정 내용 |
+|---|---|
+| `OAuth2SuccessHandler.java` | `redirect("http://localhost:8080/index.html")` → `redirect("/index.html")` |
+| `CookieUtil.java` | `isSecureEnvironment()` — prod 프로필일 때 Secure 플래그 추가 (HTTPS 적용 후 복원) |
+| `SecurityConfig.java` | `permitAll()` 에 `/` 경로 추가 (루트 접근 시 401 발생) |
+| `application-prod.properties` | OAuth redirect-uri `http://` → `https://` 변경 |
+
+---
+
+## Clean URL 적용 (2026-06-30)
+
+### 개요
+
+모든 페이지 링크에서 `.html` 확장자를 제거하고 `/login`, `/dashboard` 형태의 깔끔한 URL로 변경.
+
+### Nginx rewrite 규칙 (EC2 `/etc/nginx/sites-available/wordcraft`)
+
+```nginx
+location = /login          { rewrite ^ /login.html break; proxy_pass http://localhost:8080; }
+location = /register       { rewrite ^ /register.html break; proxy_pass http://localhost:8080; }
+location = /dashboard      { rewrite ^ /dashboard.html break; proxy_pass http://localhost:8080; }
+location = /vocab-new      { rewrite ^ /vocab-new.html break; proxy_pass http://localhost:8080; }
+location = /vocab          { rewrite ^ /vocab.html break; proxy_pass http://localhost:8080; }
+location = /community      { rewrite ^ /community.html break; proxy_pass http://localhost:8080; }
+location = /community-vocab { rewrite ^ /community-vocab.html break; proxy_pass http://localhost:8080; }
+location = /settings       { rewrite ^ /settings.html break; proxy_pass http://localhost:8080; }
+location = /test           { rewrite ^ /test.html break; proxy_pass http://localhost:8080; }
+location = /test-result    { rewrite ^ /test-result.html break; proxy_pass http://localhost:8080; }
+location = /forgot-password { rewrite ^ /forgot-password.html break; proxy_pass http://localhost:8080; }
+location = /gemini-guide   { rewrite ^ /gemini-guide.html break; proxy_pass http://localhost:8080; }
+location = /policy         { rewrite ^ /policy.html break; proxy_pass http://localhost:8080; }
+```
+
+> **주의:** `last` 대신 `break` + `proxy_pass` 를 써야 URL 바에 `.html`이 노출되지 않는다. `last`는 Nginx 내부 재처리라 Spring Boot가 다시 `.html`로 redirect하는 문제 발생.
+
+### 변경된 링크 패턴
+
+| 변경 전 | 변경 후 |
+|---|---|
+| `href="login.html"` | `href="/login"` |
+| `href="dashboard.html"` | `href="/dashboard"` |
+| `window.location.href = 'dashboard.html'` | `window.location.href = '/dashboard'` |
+| `href="index.html"` | `href="/"` |
+
+**적용 파일:** 모든 `.html` 정적 파일 + `main.js`
+
+---
+
+## index.html 핵심 기능 섹션 주석 처리 (2026-06-30)
+
+`<!-- FEATURES -->` 섹션("핵심 기능 / WordCraft AI가 특별한 이유") 전체를 HTML 주석으로 처리.  
+복원하려면 `index.html`에서 해당 `<!-- ... -->` 주석을 제거하면 된다.
+
+---
+
+## settings.html API Key 상태 표시 버그 수정 (2026-06-30)
+
+### 원인
+
+`KEY_MAP = { anthropic: ..., openai: ..., google: ... }` 에서 anthropic·openai 항목의 `id="status-anthropic"`, `id="status-openai"` DOM 요소가 HTML에 없어 `loadKeys()` 가 첫 번째 provider에서 TypeError 발생 → google 상태 업데이트까지 도달하지 못함.
+
+### 수정
+
+```js
+// 변경 전
+const KEY_MAP = { anthropic: 'wc-key-anthropic', openai: 'wc-key-openai', google: 'wc-key-google' };
+
+// 변경 후
+const KEY_MAP = { google: 'wc-key-google' };
+```
+
+Anthropic·OpenAI는 아직 미구현이므로 KEY_MAP에서 제외. 향후 구현 시 HTML에 `id="status-anthropic"` 요소 추가 후 KEY_MAP에 재등록.
