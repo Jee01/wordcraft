@@ -110,6 +110,9 @@ wordcraft/
 | Gemini 가이드 | `/gemini-guide` | Gemini API Key 발급 5단계 안내 |
 
 ---
+## ERD
+https://github.com/Jee01/wordcraft/issues/1
+---
 
 ## 🔐 인증 방식
 
