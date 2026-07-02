@@ -36,18 +36,21 @@ public class UserController {
     //만료 5분
     private static final int ACCESS_TOKEN_FOR_RESET_PASSWORD = 60 * 5;
 
+    //이메일 발송
     @PostMapping("/email")
     public ResponseEntity<Map<String, String>> sendEmail(@Valid @RequestBody EmailVerifyRequestDTO emailVerifyRequestDTO){
         emailService.sendEmail(emailVerifyRequestDTO);
         return ResponseEntity.ok(Map.of("message", "success send email"));
     }
 
+    //이메일 코드 확인
     @PostMapping("/email/verify")
     public ResponseEntity<Boolean> verifyEmail(@Valid @RequestBody EmailCodeVerifyDTO emailCodeVerifyDTO){
         Boolean verify = emailService.verifyCode(emailCodeVerifyDTO);
         return ResponseEntity.ok(verify);
     }
 
+    //비밀번호 찾기 용 이메일 발송
     @PostMapping("/email/forgotPassword")
     public ResponseEntity<Map<String, String>> sendResetEmail(@Valid @RequestBody EmailVerifyRequestDTO emailVerifyRequestDTO){
         if(userService.isValidEmail(emailVerifyRequestDTO.getEmail())){
@@ -56,6 +59,7 @@ public class UserController {
         return ResponseEntity.ok(Map.of("message", "success send email"));
     }
 
+    //비밀번호 찾기 용 이메일 코드 확인
     @PostMapping("/email/verify/forgotPassword")
     public ResponseEntity<Boolean> verifyResetEmail(@Valid @RequestBody EmailCodeVerifyDTO emailCodeVerifyDTO, HttpServletResponse response){
         Boolean verify = emailService.verifyCode(emailCodeVerifyDTO);
@@ -66,6 +70,7 @@ public class UserController {
         return ResponseEntity.ok(verify);
     }
 
+    //비밀번호 재설정
     @PutMapping("/reset-password")
     public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ForgotPasswordUpdateDTO forgotPasswordUpdateDTO,
                                                              @AuthenticationPrincipal UserDetails userDetails){
@@ -76,6 +81,7 @@ public class UserController {
                 .body(Map.of("message", "success update password"));
     }
 
+    //가입 요청
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> register(@Valid @RequestBody UserRegisterDTO userRegisterDTO) {
         userService.register(userRegisterDTO);
@@ -84,6 +90,8 @@ public class UserController {
                 .status(HttpStatus.CREATED)
                 .body(Map.of("message", "success registered"));
     }
+
+    //로그인 요청
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login (@Valid @RequestBody LoginRequestDTO loginRequestDTO,
                                                    HttpServletResponse response){
@@ -94,6 +102,7 @@ public class UserController {
         return ResponseEntity.ok(Map.of("message", "success login"));
     }
 
+    //비밀번호 변경
     @PutMapping("/update-password")
     public ResponseEntity<Map<String, String>> updatePassword (@Valid @RequestBody UserPasswordUpdateDTO userPasswordUpdateDTO,
                                                        @AuthenticationPrincipal UserDetails userDetails){
@@ -105,6 +114,7 @@ public class UserController {
                 .body(Map.of("message", "success update password"));
     }
 
+    //닉네임 변경
     @PutMapping("/update-nickname")
     public ResponseEntity<Map<String, String>> updateNickname (@Valid @RequestBody UserNicknameUpdateDTO userNicknameUpdateDTO,
                                                                @AuthenticationPrincipal UserDetails userDetails){
@@ -117,6 +127,7 @@ public class UserController {
 
     }
 
+    //회원 탈퇴
     @PostMapping("/delete")
     public ResponseEntity<Map<String, String>> delete (@Valid @RequestBody UserDeleteDTO userDeleteDTO,
                                                        @AuthenticationPrincipal UserDetails userDetails){
@@ -125,6 +136,7 @@ public class UserController {
         return ResponseEntity.ok(Map.of("message", "success delete"));
     }
 
+    //로그아웃
     @PostMapping("/logout")
     public ResponseEntity<Map<String, String>> logout(@AuthenticationPrincipal UserDetails userDetails,
                                                       HttpServletRequest request,
@@ -138,6 +150,7 @@ public class UserController {
         return ResponseEntity.ok(Map.of("message", "success logout"));
     }
 
+    //새 access Token 발급
     @PostMapping("/refresh")
     public ResponseEntity<Map<String, String>> refresh(HttpServletRequest request,
                                                        HttpServletResponse response) {
@@ -165,6 +178,7 @@ public class UserController {
         return ResponseEntity.ok(Map.of("message", "token refreshed"));
     }
 
+    //설정 및 로그인 상태 반영
     @GetMapping("/me")
     public ResponseEntity<UserDTO> me(@AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(userService.loginValidate(userDetails));

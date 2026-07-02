@@ -19,6 +19,7 @@ import java.util.Map;
 public class CommunityController {
     private final CommunityService communityService;
 
+    //단어장 복사
     @PostMapping("/{id}/copy")
     public ResponseEntity<Map<String, String>> copyVocabularies(@PathVariable Long id,
                                                                 @AuthenticationPrincipal UserDetails userDetails) {
@@ -28,12 +29,14 @@ public class CommunityController {
                 .body(Map.of("message", "success copy vocabularies"));
     }
 
+    //커뮤니티용 단어장 리스트 조회
     @GetMapping
     public ResponseEntity<List<VocaResponseDTO>> getVocaList() {
         List<VocaResponseDTO> vocabularies = communityService.getVocaList();
         return ResponseEntity.ok(vocabularies);
     }
 
+    //커뮤니티 좋아요 기능
     @PostMapping("/{id}/like")
     public ResponseEntity<Map<String, String>> likeVocabularies(@PathVariable Long id,
                                                                 @AuthenticationPrincipal UserDetails userDetails) {
@@ -48,6 +51,7 @@ public class CommunityController {
         }
     }
 
+    //커뮤니티 용 단어장 세부조회
     @GetMapping("/{id}")
     public ResponseEntity<VocaDetailResponseDTO> getVocaDetail(@PathVariable Long id) {
         return ResponseEntity.ok(communityService.getVocaDetail(id));
