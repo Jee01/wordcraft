@@ -111,7 +111,7 @@ wordcraft/
 
 ---
 ## ERD
-https://github.com/Jee01/wordcraft/issues/1
+<img width="1652" height="1209" alt="Image" src="https://github.com/user-attachments/assets/84e572bf-a1c0-48ad-946d-83316ffb56d4" />
 ---
 
 ## 🔐 인증 방식
