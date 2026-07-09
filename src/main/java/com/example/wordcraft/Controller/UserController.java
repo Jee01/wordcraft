@@ -128,7 +128,7 @@ public class UserController {
     }
 
     //회원 탈퇴
-    @PostMapping("/delete")
+    @DeleteMapping("/delete")
     public ResponseEntity<Map<String, String>> delete (@Valid @RequestBody UserDeleteDTO userDeleteDTO,
                                                        @AuthenticationPrincipal UserDetails userDetails){
 

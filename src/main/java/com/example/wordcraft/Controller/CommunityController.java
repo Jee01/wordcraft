@@ -46,8 +46,7 @@ public class CommunityController {
                     .body(Map.of("message", "success like vocabularies"));
         }
         else{
-            return ResponseEntity.status(HttpStatus.NO_CONTENT)
-                    .body(Map.of("message", "success cancel vocabularies"));
+            return ResponseEntity.ok(Map.of("message", "success cancel vocabularies"));
         }
     }
 
