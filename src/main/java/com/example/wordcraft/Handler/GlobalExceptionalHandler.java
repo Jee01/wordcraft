@@ -53,11 +53,18 @@ public class GlobalExceptionalHandler {
                 .body(Map.of("code", "EMAIL_SEND_FAILED", "message", e.getMessage()));
     }
 
-    // 최후 방어선 — 처리되지 않은 모든 예외
+    // 모든 예외
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneral(Exception e) {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR) // 500
                 .body(Map.of("code", "INTERNAL_ERROR", "message", "서버 오류가 발생했습니다."));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException e) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST) // 400
+                .body(Map.of("code", "BAD_REQUEST", "message", e.getMessage()));
     }
 }

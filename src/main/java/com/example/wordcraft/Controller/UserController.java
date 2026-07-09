@@ -46,7 +46,7 @@ public class UserController {
     //이메일 코드 확인
     @PostMapping("/email/verify")
     public ResponseEntity<Map<String, String>> verifyEmail(@Valid @RequestBody EmailCodeVerifyDTO emailCodeVerifyDTO){
-        emailService.verifyCode(emailCodeVerifyDTO);  // 실패 시 내부에서 예외 throw
+        emailService.verifyCode(emailCodeVerifyDTO);
         return ResponseEntity.ok(Map.of("message", "success verify"));
     }
 
@@ -61,13 +61,11 @@ public class UserController {
 
     //비밀번호 찾기 용 이메일 코드 확인
     @PostMapping("/email/verify/forgotPassword")
-    public ResponseEntity<Boolean> verifyResetEmail(@Valid @RequestBody EmailCodeVerifyDTO emailCodeVerifyDTO, HttpServletResponse response){
-        Boolean verify = emailService.verifyCode(emailCodeVerifyDTO);
-        if(verify){
-            TokenResponseResetDTO tokenResponseResetDTO = userService.ResetPasswordToken(emailCodeVerifyDTO.getEmail());
-            CookieUtil.addTokenCookie(response,"access_token",tokenResponseResetDTO.getAccessToken(),ACCESS_TOKEN_FOR_RESET_PASSWORD);
-        }
-        return ResponseEntity.ok(verify);
+    public ResponseEntity<Map<String, String>> verifyResetEmail(@Valid @RequestBody EmailCodeVerifyDTO emailCodeVerifyDTO, HttpServletResponse response){
+        emailService.verifyCode(emailCodeVerifyDTO);
+        TokenResponseResetDTO tokenResponseResetDTO = userService.ResetPasswordToken(emailCodeVerifyDTO.getEmail());
+        CookieUtil.addTokenCookie(response,"access_token",tokenResponseResetDTO.getAccessToken(),ACCESS_TOKEN_FOR_RESET_PASSWORD);
+        return ResponseEntity.ok(Map.of("message", "success verify"));
     }
 
     //비밀번호 재설정
