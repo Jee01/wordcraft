@@ -127,11 +127,10 @@ public class UserController {
 
     //회원 탈퇴
     @DeleteMapping("/delete")
-    public ResponseEntity<Map<String, String>> delete (@Valid @RequestBody UserDeleteDTO userDeleteDTO,
-                                                       @AuthenticationPrincipal UserDetails userDetails){
-
+    public ResponseEntity<Void> delete (@Valid @RequestBody UserDeleteDTO userDeleteDTO,
+                                        @AuthenticationPrincipal UserDetails userDetails){
         userService.deleteUser(getEmail(userDetails), userDeleteDTO);
-        return ResponseEntity.ok(Map.of("message", "success delete"));
+        return ResponseEntity.noContent().build();
     }
 
     //로그아웃
