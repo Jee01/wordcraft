@@ -45,9 +45,9 @@ public class UserController {
 
     //이메일 코드 확인
     @PostMapping("/email/verify")
-    public ResponseEntity<Boolean> verifyEmail(@Valid @RequestBody EmailCodeVerifyDTO emailCodeVerifyDTO){
-        Boolean verify = emailService.verifyCode(emailCodeVerifyDTO);
-        return ResponseEntity.ok(verify);
+    public ResponseEntity<Map<String, String>> verifyEmail(@Valid @RequestBody EmailCodeVerifyDTO emailCodeVerifyDTO){
+        emailService.verifyCode(emailCodeVerifyDTO);  // 실패 시 내부에서 예외 throw
+        return ResponseEntity.ok(Map.of("message", "success verify"));
     }
 
     //비밀번호 찾기 용 이메일 발송

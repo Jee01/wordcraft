@@ -40,14 +40,15 @@ public class EmailService {
         }
     }
 
-    public Boolean verifyCode(EmailCodeVerifyDTO emailCodeVerifyDTO) {
+    public void verifyCode(EmailCodeVerifyDTO emailCodeVerifyDTO) {
         String email = emailCodeVerifyDTO.getEmail();
         String code = emailCodeVerifyDTO.getCode();
 
-        if (!emailMap.containsKey(email)) return false;
-        if (!emailMap.get(email).equals(code)) return false;
+        if (!emailMap.containsKey(email))
+            throw new IllegalArgumentException("인증 코드가 만료되었습니다.");
+        if (!emailMap.get(email).equals(code))
+            throw new IllegalArgumentException("인증 코드가 일치하지 않습니다.");
 
         emailMap.remove(email);
-        return true;
     }
 }
