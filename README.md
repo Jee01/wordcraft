@@ -110,6 +110,9 @@ wordcraft/
 | Gemini 가이드 | `/gemini-guide` | Gemini API Key 발급 5단계 안내 |
 
 ---
+## ERD
+<img width="1652" height="1209" alt="Image" src="https://github.com/user-attachments/assets/84e572bf-a1c0-48ad-946d-83316ffb56d4" />
+---
 
 ## 🔐 인증 방식
 
