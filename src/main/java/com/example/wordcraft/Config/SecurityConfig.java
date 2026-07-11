@@ -55,7 +55,7 @@ public class SecurityConfig {
                 )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
-                            // API 요청은 Google로 리다이렉트하지 않고 401 반환
+                            // API 요청은 Google로 리다이렉트하지 않고 401 반환(302 -> 401)
                             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized");
                         })
                 )
