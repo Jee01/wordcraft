@@ -40,7 +40,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/register", "/api/auth/login","/api/auth/refresh",
                                 "/oauth2/**","/login/oauth2/**", "/api/auth/email","/api/auth/email/**").permitAll()
-                        .requestMatchers("/api/community").permitAll()
+                        .requestMatchers("/api/community","/api/community/{id}").permitAll()
                         // 정적 파일 전체 허용
                         .requestMatchers("/", "/*.html", "/*.css", "/*.js", "/*.ico").permitAll()
                         // API 인증 필요

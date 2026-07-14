@@ -48,14 +48,14 @@ async function requireAuth() {
 (function () {
   // Hash → HTML 파일 매핑
   const ROUTES = {
-    '#/login':        'login.html',
-    '#/register':     'register.html',
-    '#/dashboard':    'dashboard.html',
-    '#/vocab/new':    'vocab-new.html',
-    // '#/vocab/import': 'vocab-import.html',  /* 가져오기 기능 비활성화 */
-    '#/community':    'community.html',
-    '#/settings':          'settings.html',
-    '#/forgot-password':   'forgot-password.html',
+    '#/login':        '/login',
+    '#/register':     '/register',
+    '#/dashboard':    '/dashboard',
+    '#/vocab/new':    '/vocab-new',
+    // '#/vocab/import': '/vocab-import',  /* 가져오기 기능 비활성화 */
+    '#/community':    '/community',
+    '#/settings':     '/settings',
+    '#/forgot-password': '/forgot-password',
   };
 
   function navigate(hash) {
@@ -65,15 +65,15 @@ async function requireAuth() {
 
     // 동적 라우트: #/vocab/:id
     const vocabMatch = hash.match(/^#\/vocab\/(\d+)$/);
-    if (vocabMatch) { window.location.href = `vocab.html?id=${vocabMatch[1]}`; return; }
+    if (vocabMatch) { window.location.href = `/vocab?id=${vocabMatch[1]}`; return; }
 
     // 동적 라우트: #/test/:vocabId
     const testMatch = hash.match(/^#\/test\/(\d+)$/);
-    if (testMatch) { window.location.href = `test.html?vocabId=${testMatch[1]}`; return; }
+    if (testMatch) { window.location.href = `/test?vocabId=${testMatch[1]}`; return; }
 
     // 동적 라우트: #/test/:id/result
     const resultMatch = hash.match(/^#\/test\/(\d+)\/result$/);
-    if (resultMatch) { window.location.href = `test-result.html?vocabId=${resultMatch[1]}`; return; }
+    if (resultMatch) { window.location.href = `/test-result?vocabId=${resultMatch[1]}`; return; }
   }
 
   // 페이지 최초 진입 시 처리 (직접 URL에 hash가 붙은 경우)

@@ -74,6 +74,10 @@
 
     .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--text-3); font-size: 0.85rem; text-decoration: none; margin-bottom: 20px; transition: color .2s; }
     .back-link:hover { color: var(--accent-2); }
+    .login-toast { position:fixed; bottom:32px; left:50%; transform:translateX(-50%); background:var(--bg-3); border:1px solid var(--border); border-radius:12px; padding:14px 24px; display:flex; align-items:center; gap:16px; box-shadow:0 8px 32px rgba(0,0,0,.3); z-index:9999; animation:toastIn .25s ease; }
+    .login-toast span { color:var(--text); font-size:.95rem; }
+    .login-toast a { color:var(--accent); font-weight:600; text-decoration:none; white-space:nowrap; }
+    @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(12px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
   </style>
 </head>
 <body>
@@ -141,9 +145,6 @@
   <script src="main.js"></script>
   <script>
     (async function () {
-      const user = await requireAuth();
-      if (!user) return;
-
       const html = document.documentElement;
       const toggle = document.getElementById('themeToggle');
       if (localStorage.getItem('wc-theme') === 'light') html.classList.add('light');
@@ -209,11 +210,21 @@
         document.getElementById('copyBtn').addEventListener('click', copyVocab);
       }
 
+      function showLoginToast() {
+        if (document.querySelector('.login-toast')) return;
+        const t = document.createElement('div');
+        t.className = 'login-toast';
+        t.innerHTML = '<span>이 기능은 로그인이 필요합니다.</span><a href="/login">로그인하기 →</a>';
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 3000);
+      }
+
       async function copyVocab() {
         const btn = document.getElementById('copyBtn');
         btn.disabled = true; btn.textContent = '복사 중...';
         try {
           const res = await authFetch(`/api/community/${vocabId}/copy`, { method: 'POST' });
+          if (res.status === 401) { btn.disabled = false; btn.textContent = '📋 내 단어장으로 복사'; showLoginToast(); return; }
           if (res.ok) {
             btn.textContent = '✅ 복사됨';
             setTimeout(() => { window.location.href = '/dashboard'; }, 800);
