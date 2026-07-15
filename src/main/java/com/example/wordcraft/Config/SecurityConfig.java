@@ -42,7 +42,7 @@ public class SecurityConfig {
                                 "/oauth2/**","/login/oauth2/**", "/api/auth/email","/api/auth/email/**").permitAll()
                         .requestMatchers("/api/community","/api/community/{id}").permitAll()
                         // 정적 파일 전체 허용
-                        .requestMatchers("/", "/*.html", "/*.css", "/*.js", "/*.ico").permitAll()
+                        .requestMatchers("/", "/*.html", "/*.css", "/*.js", "/*.ico", "/sitemap.xml", "/robots.txt").permitAll()
                         // API 인증 필요
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().authenticated()

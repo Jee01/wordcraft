@@ -1,24 +1,19 @@
 package com.example.wordcraft.Service.VocaService;
 
-import com.example.wordcraft.DTO.Voca.VocaDetailResponseDTO;
-import com.example.wordcraft.DTO.Voca.VocaResponseDTO;
-import com.example.wordcraft.DTO.Voca.VocaWordDetailDTO;
-import com.example.wordcraft.DTO.Voca.VocaWordRequestDTO;
+import com.example.wordcraft.DTO.Voca.*;
 import com.example.wordcraft.Entity.*;
 import com.example.wordcraft.Entity.Voca.VocaWordDetail;
 import com.example.wordcraft.Entity.Voca.VocaWords;
 import com.example.wordcraft.Entity.Voca.Vocabularies;
 import com.example.wordcraft.Exception.ResourceNotFoundException;
 import com.example.wordcraft.Exception.UnauthorizedException;
+import com.example.wordcraft.Helper.VocaDetailHelper;
 import com.example.wordcraft.Repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +24,7 @@ public class CommunityService {
     private final VocaWordDetailRepository vocaWordDetailRepository;
     private final UserRepository userRepository;
     private final CommunityLikeRepository communityLikeRepository;
+    private final VocaDetailHelper vocaDetailHelper;
 
     @Transactional
     public void copyVocabularies(Long id, String email) {
@@ -49,6 +45,10 @@ public class CommunityService {
         Vocabularies saved = vocabulariesRepository.save(copyVocabularies);
 
         List<VocaWords> originVocaWords = vocaWordsRepository.findByVocabularyId(originVocabularies.getId());
+        List<VocaWordDetail> allDetails = vocaWordDetailRepository.findByVocaWords(originVocaWords);
+        Map<Long, List<VocaWordDetail>> detailMap = allDetails.stream()
+                .collect(Collectors.groupingBy(d -> d.getVocaWords().getId()));
+
         List<VocaWordDetail> detailList = new ArrayList<>();
 
         for (VocaWords originWord : originVocaWords) {
@@ -60,7 +60,7 @@ public class CommunityService {
                     .learned(false)
                     .build());
 
-            for (VocaWordDetail originDetail : vocaWordDetailRepository.findByVocaWords(originWord)) {
+            for (VocaWordDetail originDetail : detailMap.getOrDefault(originWord.getId(), List.of())) {
                 detailList.add(VocaWordDetail.builder()
                         .vocaWords(savedWord)
                         .pos(originDetail.getPos())
@@ -76,17 +76,29 @@ public class CommunityService {
     public List<VocaResponseDTO> getVocaList(){
         List<Vocabularies> vocabulariesIsPublic = vocabulariesRepository.findAllByIsPublic(true);
 
+        List<Long> vocabularyId = vocabulariesIsPublic.stream()
+                .map(Vocabularies::getId)
+                .collect(Collectors.toList());
+
+        Map<Long, Integer> wordCountMap = vocaWordsRepository.countByVocabularyId(vocabularyId)
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row ->((Long) row[1]).intValue()
+                ));
+        Map<Long, Integer> likeCountMap = communityLikeRepository.countByVocabularyId(vocabularyId)
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> ((Long) row[1]).intValue()
+                ));
         return vocabulariesIsPublic.stream()
                 .map(vocab->{
-                            int wordCount = vocaWordsRepository.countByVocabularyId(vocab.getId());
-                            int likeCount = communityLikeRepository.countByVocabularyId(vocab.getId());
-                            VocaResponseDTO vocaResponseDTO = VocaResponseDTO.from(vocab);
-                            vocaResponseDTO.setWordCount(wordCount);
-                            vocaResponseDTO.setLikeCount(likeCount);
-                            return vocaResponseDTO;
-                        }
-                )
-                .collect(Collectors.toList());
+                    VocaResponseDTO dto = VocaResponseDTO.from(vocab);
+                    dto.setWordCount(wordCountMap.getOrDefault(vocab.getId(), 0));
+                    dto.setLikeCount(likeCountMap.getOrDefault(vocab.getId(), 0));
+                    return dto;
+                }).collect(Collectors.toList());
     }
 
     @Transactional
@@ -95,47 +107,7 @@ public class CommunityService {
         if(Objects.equals(vocabularies.getIsPublic(),false)){
             throw new UnauthorizedException("private vocabularies");
         }
-        List<VocaWords> vocaWords = vocaWordsRepository.findByVocabularyId(vocabularies.getId());
-
-        List<VocaWordRequestDTO> vocaWordRequestDTOS = vocaWords.stream()
-                .map(w -> {
-                    List<VocaWordDetailDTO> details = vocaWordDetailRepository.findByVocaWords(w)
-                            .stream()
-                            .map(detail -> {
-                                VocaWordDetailDTO dto = new VocaWordDetailDTO();
-                                dto.setId(detail.getId());
-                                dto.setPos(detail.getPos());
-                                dto.setMeaning(detail.getMeanings());
-                                dto.setExamples(detail.getExamples());
-                                return dto;
-                            })
-                            .toList();
-
-                    VocaWordRequestDTO dto = new VocaWordRequestDTO();
-                    dto.setId(w.getId());
-                    dto.setWord(w.getWord());
-                    dto.setIpa(w.getIpa());
-                    dto.setMemoryTip(w.getMemoryTip());
-                    dto.setLearned(w.getLearned());
-                    dto.setVocaWordDetailDTOS(details);
-                    return dto;
-                })
-                .toList();
-
-        List<String> tags = (vocabularies.getTag() != null && !vocabularies.getTag().isBlank())
-                ? List.of(vocabularies.getTag().split(","))
-                : List.of();
-
-        return VocaDetailResponseDTO.builder()
-                .id(vocabularies.getId())
-                .title(vocabularies.getTitle())
-                .tags(tags)
-                .isPublic(vocabularies.getIsPublic())
-                .wordCount(vocaWords.size())
-                .updatedAt(vocabularies.getCreatedAt().toString().substring(0, 10))
-                .author(vocabularies.getUser().getNickname())
-                .words(vocaWordRequestDTOS)
-                .build();
+        return vocaDetailHelper.buildDetail(vocabularies);
     }
 
     @Transactional

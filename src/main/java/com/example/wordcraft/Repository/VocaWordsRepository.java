@@ -12,7 +12,9 @@ import java.util.Optional;
 
 @Repository
 public interface VocaWordsRepository extends JpaRepository<VocaWords,Long> {
-    int countByVocabularyId(Long vocabularyId);
+
+    @Query("SELECT w.vocabulary.id, COUNT(w) FROM VocaWords w WHERE w.vocabulary.id IN :vocabularyId GROUP BY w.vocabulary.id")
+    List<Object[]> countByVocabularyId(@Param("vocabularyId") List<Long> vocabularyId);
     List<VocaWords> findByVocabularyId(Long vocabularyId);
     void deleteByVocabularyId(Long vocabularyId);
 

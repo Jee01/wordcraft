@@ -7,6 +7,7 @@ import com.example.wordcraft.Entity.Voca.VocaWords;
 import com.example.wordcraft.Entity.Voca.Vocabularies;
 import com.example.wordcraft.Exception.ResourceNotFoundException;
 import com.example.wordcraft.Exception.UnauthorizedException;
+import com.example.wordcraft.Helper.VocaDetailHelper;
 import com.example.wordcraft.Repository.UserRepository;
 import com.example.wordcraft.Repository.VocaWordDetailRepository;
 import com.example.wordcraft.Repository.VocaWordsRepository;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -27,6 +29,7 @@ public class VocaService {
     private final VocaWordsRepository vocaWordsRepository;
     private final VocaWordDetailRepository vocaWordDetailRepository;
     private final UserRepository userRepository;
+    private final VocaDetailHelper vocaDetailHelper;
 
     @Transactional
     public void createVocabularies(VocaRequestDTO vocaRequestDTO, String email)
@@ -74,11 +77,21 @@ public class VocaService {
                 .orElseThrow(()-> new ResourceNotFoundException("존재하지 않는 사용자입니다."));
 
         List<Vocabularies> myVocabularies = vocabulariesRepository.findAllByUser(user);
+
+        List<Long> vocabularyId = myVocabularies.stream()
+                .map(Vocabularies::getId)
+                .collect(Collectors.toList());
+
+        Map<Long, Integer> wordCountMap = vocaWordsRepository.countByVocabularyId(vocabularyId)
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row ->((Long) row[1]).intValue()
+                ));
         return myVocabularies.stream()
                 .map(vocab->{
-                            int wordCount = vocaWordsRepository.countByVocabularyId(vocab.getId());
                             VocaResponseDTO vocaResponseDTO = VocaResponseDTO.from(vocab);
-                            vocaResponseDTO.setWordCount(wordCount);
+                            vocaResponseDTO.setWordCount(wordCountMap.getOrDefault(vocab.getId(), 0));
                             return vocaResponseDTO;
                         }
                 )
@@ -89,50 +102,9 @@ public class VocaService {
     @Transactional
     public VocaDetailResponseDTO getVocaDetail(String email, Long id) {
         Vocabularies vocabularies = getVocabularies(id);
-
         userValid(email, vocabularies);
 
-        List<VocaWords> vocaWords = vocaWordsRepository.findByVocabularyId(vocabularies.getId());
-
-        List<VocaWordRequestDTO> vocaWordRequestDTOS = vocaWords.stream()
-                .map(w -> {
-                    List<VocaWordDetailDTO> details = vocaWordDetailRepository.findByVocaWords(w)
-                            .stream()
-                            .map(detail -> {
-                                VocaWordDetailDTO dto = new VocaWordDetailDTO();
-                                dto.setId(detail.getId());
-                                dto.setPos(detail.getPos());
-                                dto.setMeaning(detail.getMeanings());
-                                dto.setExamples(detail.getExamples());
-                                return dto;
-                            })
-                            .toList();
-
-                    VocaWordRequestDTO dto = new VocaWordRequestDTO();
-                    dto.setId(w.getId());
-                    dto.setWord(w.getWord());
-                    dto.setIpa(w.getIpa());
-                    dto.setMemoryTip(w.getMemoryTip());
-                    dto.setLearned(w.getLearned());
-                    dto.setVocaWordDetailDTOS(details);
-                    return dto;
-                })
-                .toList();
-
-        List<String> tags = (vocabularies.getTag() != null && !vocabularies.getTag().isBlank())
-                ? List.of(vocabularies.getTag().split(","))
-                : List.of();
-
-        return VocaDetailResponseDTO.builder()
-                .id(vocabularies.getId())
-                .title(vocabularies.getTitle())
-                .tags(tags)
-                .isPublic(vocabularies.getIsPublic())
-                .wordCount(vocaWords.size())
-                .updatedAt(vocabularies.getCreatedAt().toString().substring(0, 10))
-                .author(vocabularies.getUser().getNickname())
-                .words(vocaWordRequestDTOS)
-                .build();
+        return vocaDetailHelper.buildDetail(vocabularies);
     }
 
     //단어장 수정

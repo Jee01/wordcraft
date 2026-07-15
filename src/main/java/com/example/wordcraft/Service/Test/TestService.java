@@ -42,19 +42,15 @@ public class TestService {
             throw new ResourceNotFoundException("문제를 생성하려면 단어가 2개 이상 필요합니다.");
         }
 
-        // 모든 단어의 detail을 미리 로드
-        Map<Long, List<VocaWordDetail>> detailMap = new HashMap<>();
-        for (VocaWords word : words) {
-            List<VocaWordDetail> details = vocaWordDetailRepository.findByVocaWords(word);
-            if (!details.isEmpty()) {
-                detailMap.put(word.getId(), details);
-            }
-        }
+        // 모든 단어의 detail을 한 번에 로드
+        Map<Long, List<VocaWordDetail>> detailMap = vocaWordDetailRepository.findByVocaWords(words)
+                .stream()
+                .collect(Collectors.groupingBy(d -> d.getVocaWords().getId()));
 
-        // 오답 후보 풀: 모든 detail 목록
+        // 모든 detail 목록
         List<VocaWordDetail> allDetails = detailMap.values().stream()
                 .flatMap(List::stream)
-                .collect(Collectors.toList());
+                .toList();
 
         List<MultipleChoiceQuestionDTO> questions = new ArrayList<>();
         Random random = new Random();
@@ -109,16 +105,20 @@ public class TestService {
         Vocabularies vocab = getVocabAndValidate(vocabId, email);
         List<VocaWords> words = vocaWordsRepository.findByVocabularyId(vocab.getId());
 
+        Map<Long, List<VocaWordDetail>> detailMap = vocaWordDetailRepository.findByVocaWords(words)
+                .stream()
+                .collect(Collectors.groupingBy(d -> d.getVocaWords().getId()));
+
         List<FillBlankQuestionDTO> questions = new ArrayList<>();
 
         for (VocaWords word : words) {
-            List<VocaWordDetail> details = vocaWordDetailRepository.findByVocaWords(word);
+            List<VocaWordDetail> details = detailMap.getOrDefault(word.getId(), List.of());
 
             for (VocaWordDetail detail : details) {
                 if (detail.getExamples() == null || detail.getExamples().isBlank()) continue;
 
                 String example = detail.getExamples();
-                // 단어를 ___ 로 대체 (대소문자 무시)
+                // 단어를 ___ 로 대체
                 String blanked = example.replaceAll("(?i)" + escapeRegex(word.getWord()), "___");
 
                 if (blanked.equals(example)) continue; // 단어가 예문에 없으면 스킵
